@@ -1,50 +1,96 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# Cover Letter Generator Browser Plugin Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. User Privacy & Data Security (NON-NEGOTIABLE)
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+User personal information and job descriptions are sensitive data. This plugin MUST:
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+- Minimize data storage; retain only what user explicitly saves locally
+- Never transmit personal data or job descriptions to third parties without explicit user consent
+- Provide clear disclosure of what data flows to the LLM service (e.g., "Your data will be sent to OpenAI")
+- Support local-first operation where possible (e.g., client-side processing before LLM calls)
+- Encrypt sensitive data at rest if stored persistently
+- Include a "data usage" setting allowing users to review/export/delete their submission history
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+**Rationale**: Users trust the plugin with personal career information. Privacy breaches destroy trust and may violate regulatory requirements (GDPR, CCPA). Every data handling decision must prioritize user control and transparency.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### II. LLM-Powered Content Generation Excellence
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+The core value is generating contextually relevant cover letters. The plugin MUST:
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+- Accept structured user inputs: name, skills, experience, target role, company context
+- Parse and extract key details from browsed job postings automatically where safe to do so
+- Send well-formed, detailed prompts to the LLM (context matters for quality output)
+- Allow users to refine outputs iteratively (regenerate, edit, refine prompts)
+- Support multiple LLM backends (at minimum: OpenAI API, with abstraction for future extensibility)
+- Cache LLM responses per job posting to avoid redundant API calls
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+**Rationale**: Quality cover letters require rich context. Integration must be seamless, fast, and user-controllable. LLM backend abstraction ensures future flexibility.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### III. Seamless Browser Integration & Non-Intrusive UX
+
+The plugin exists in the browser to reduce friction in the job application workflow:
+
+- Popup UI launches in <200ms; no modal overlays that block page navigation
+- Detect common job posting platforms (LinkedIn, Indeed, etc.) and pre-populate job context automatically
+- Allow inline editing of extracted job details in case auto-detection is imperfect
+- Provide one-click copy-to-clipboard for generated cover letters
+- Store plugin settings (LLM API key, user profile, preferences) securely in browser storage (encrypted if possible)
+- Graceful degradation: plugin works offline for previously saved profiles; gracefully fails if LLM is unavailable
+
+**Rationale**: Users are in a high-friction workflow (job searching). Every interaction must feel natural. Interruptions and slowness will cause abandonment.
+
+### IV. Test-First Development (Mandatory)
+
+Every feature MUST have tests written before implementation:
+
+- Unit tests: Core LLM integration logic, data extraction, prompt formatting
+- Integration tests: Plugin ↔ job posting site interactions, LLM API mocking
+- UI tests (Cypress or Playwright): Popup opens/closes, form submission, copy-to-clipboard
+- Red-Green-Refactor cycle strictly enforced
+- Acceptance criteria from spec MUST be expressed as passing tests before "done"
+
+**Rationale**: Plugins are fragile (browser updates, site layout changes, API changes). Tests catch regressions early. Plugin availability directly impacts user trust.
+
+### V. Clear Data Flow & Observability
+
+Users and developers MUST understand what happens to their data at each step:
+
+- All API calls (LLM, analytics, etc.) MUST be logged in a structured format (console + optional remote logging with consent)
+- Logs MUST NOT contain sensitive user data by default (use placeholders like `[USER_NAME]`, `[JOB_TITLE]`)
+- Errors MUST be user-friendly ("Could not connect to LLM service. Retry?" not "CORS error")
+- Plugin MUST report usage metrics (calls/day, success rate) to user dashboard for transparency
+- Code comments MUST explain why data is retained/sent, not just how
+
+**Rationale**: Transparency builds trust. When things go wrong, clear logs enable fast debugging. Users deserve to know their data's journey.
+
+## Security & Compliance Requirements
+
+- **LLM API Key Storage**: MUST be encrypted in browser storage. Never log, never transmit unencrypted.
+- **Rate Limiting**: Client-side rate limiting to prevent accidental API abuse (max 10 requests/minute per user).
+- **Browser Permissions**: Minimize requested permissions. Only request `activeTab` and `scripting` for job site detection; request `storage` for local settings.
+- **External Dependencies**: Audit all npm packages quarterly. Lock versions in `pnpm-lock.yaml`.
+
+## Development Workflow & Quality Gates
+
+- **Branching**: Feature branches from `main` prefixed with `feature/`, `bugfix/`, or `security/`
+- **Code Review**: All PRs require review. Reviewer MUST verify: test coverage >80%, no hardcoded secrets, constitution compliance.
+- **TypeScript Strict Mode**: MUST be enforced. No `any` types without justification.
+- **Build Requirement**: PR build MUST pass before merge. Zero broken builds in main.
+- **Release Process**: Tag releases as `vX.Y.Z`. Update `package.json`, build extension, publish to Chrome Web Store / Firefox Add-ons.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution supersedes all other guidance. All PRs, features, and design decisions MUST be evaluated against these principles.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Amendment Process**:
+
+1. Proposed amendment MUST be documented with rationale in a GitHub issue.
+2. Amendment requires lead developer approval and ratified in a decision doc.
+3. Version MUST be bumped (semver) and `LAST_AMENDED_DATE` updated.
+4. Dependent templates (spec, tasks, plan) MUST be reviewed and updated if affected.
+
+**Compliance Review**: Every sprint, review one completed feature against all principles. Document findings in a pull request comment or checklist. Escalate violations.
+
+**Version**: 1.0.0 | **Ratified**: 2025-10-27 | **Last Amended**: 2025-10-27

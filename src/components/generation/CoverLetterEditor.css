@@ -1,0 +1,280 @@
+/* CoverLetterEditor.css */
+
+.cover-letter-editor {
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.editor-header {
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 12px;
+}
+
+.editor-header h2 {
+  margin: 0 0 8px 0;
+  color: #1a1a1a;
+  font-size: 24px;
+}
+
+.editor-instruction {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* View toggle buttons */
+.view-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.toggle-button {
+  padding: 10px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggle-button:hover {
+  color: #4285f4;
+  background: #f5f5f5;
+}
+
+.toggle-button.active {
+  color: #4285f4;
+  border-bottom-color: #4285f4;
+}
+
+.cover-letter-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f9f9f9;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.cover-letter-section:hover {
+  border-color: #4285f4;
+  background: #fff;
+}
+
+.cover-letter-section.editing {
+  border-color: #4285f4;
+  background: #fff;
+}
+
+.cover-letter-section h3 {
+  margin: 0 0 12px 0;
+  color: #333;
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.section-content {
+  cursor: pointer;
+  position: relative;
+  padding: 12px;
+  line-height: 1.6;
+  color: #333;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  min-height: 80px;
+}
+
+.section-content:focus {
+  outline: 2px solid #4285f4;
+  outline-offset: 2px;
+}
+
+.edit-hint {
+  display: none;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  background: #4285f4;
+  color: #fff;
+  font-size: 12px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.section-content:hover .edit-hint {
+  display: block;
+}
+
+.section-editor {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #4285f4;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* Generation actions */
+.generation-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 2px solid #e0e0e0;
+}
+
+.generation-actions button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.generation-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.generation-actions button.primary {
+  background: #4285f4;
+  color: #fff;
+}
+
+.generation-actions button.primary:hover:not(:disabled) {
+  background: #3367d6;
+}
+
+.generation-actions button.secondary {
+  background: #f1f3f4;
+  color: #333;
+}
+
+.generation-actions button.secondary:hover:not(:disabled) {
+  background: #e8eaed;
+}
+
+/* Export error */
+.export-error {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fef7f7;
+  border: 1px solid #fcc;
+  border-radius: 4px;
+  color: #c33;
+}
+
+.export-error p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.section-editor:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.2);
+}
+
+/* Loading state */
+.generation-button-container {
+  margin: 20px 0;
+}
+
+.generation-button {
+  padding: 12px 24px;
+  background: #4285f4;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+}
+
+.generation-button:hover:not(:disabled) {
+  background: #3367d6;
+  transform: translateY(-1px);
+}
+
+.generation-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.generation-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.generation-button.loading {
+  background: #5a9df8;
+}
+
+.generation-button.error {
+  background: #ea4335;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-message {
+  margin-top: 8px;
+  padding: 12px;
+  background: #fce8e6;
+  border-left: 4px solid #ea4335;
+  color: #c5221f;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+/* Retry button */
+.retry-button {
+  margin-top: 12px;
+  padding: 8px 16px;
+  background: #fff;
+  color: #4285f4;
+  border: 2px solid #4285f4;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.retry-button:hover {
+  background: #f1f5ff;
+}

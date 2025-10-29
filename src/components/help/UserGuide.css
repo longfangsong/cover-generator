@@ -1,0 +1,161 @@
+.user-guide {
+  padding: 1rem;
+}
+
+.user-guide h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.guide-layout {
+  display: flex;
+  gap: 1rem;
+  min-height: 400px;
+}
+
+.guide-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 180px;
+}
+
+.guide-nav button {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.guide-nav button:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.guide-nav button.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.guide-content {
+  flex: 1;
+  padding: 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow-y: auto;
+  max-height: 500px;
+}
+
+.guide-section h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.guide-section h5 {
+  margin: 1.5rem 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.guide-section p {
+  margin: 0 0 1rem 0;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.guide-section ul,
+.guide-section ol {
+  margin: 0 0 1rem 0;
+  padding-left: 1.5rem;
+  line-height: 1.8;
+  color: #4b5563;
+}
+
+.guide-section li {
+  margin-bottom: 0.5rem;
+}
+
+.guide-section li strong {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.guide-section code {
+  padding: 0.125rem 0.375rem;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 0.875em;
+  color: #dc2626;
+}
+
+.guide-section a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.guide-section a:hover {
+  text-decoration: underline;
+}
+
+.tip {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: #dbeafe;
+  border-left: 4px solid #3b82f6;
+  border-radius: 4px;
+}
+
+.tip strong {
+  color: #1e40af;
+}
+
+.troubleshooting-item {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+.troubleshooting-item strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #dc2626;
+  font-size: 0.9375rem;
+}
+
+.troubleshooting-item ul {
+  margin: 0.5rem 0 0 0;
+}
+
+/* Scrollbar styling */
+.guide-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.guide-content::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.guide-content::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.guide-content::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
