@@ -5,11 +5,15 @@
   "{{chrome}}.host_permissions": [
     "https://www.linkedin.com/*",
     "https://linkedin.com/*",
+    "https://arbetsformedlingen.se/*",
+    "https://www.arbetsformedlingen.se/*",
     "https://cvcl-render.jollydesert-dd44d466.swedencentral.azurecontainerapps.io/*"
   ],
   "{{firefox}}.permissions": [
     "https://www.linkedin.com/*",
     "https://linkedin.com/*",
+    "https://arbetsformedlingen.se/*",
+    "https://www.arbetsformedlingen.se/*",
     "https://cvcl-render.jollydesert-dd44d466.swedencentral.azurecontainerapps.io/*"
   ],
   "content_scripts": [
@@ -17,6 +21,14 @@
       "matches": [
         "https://www.linkedin.com/jobs/*",
         "https://linkedin.com/jobs/*"
+      ],
+      "js": ["src/services/jobExtractor/client.ts"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://arbetsformedlingen.se/platsbanken/annonser/*",
+        "https://www.arbetsformedlingen.se/platsbanken/annonser/*"
       ],
       "js": ["src/services/jobExtractor/client.ts"],
       "run_at": "document_idle"

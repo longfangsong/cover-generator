@@ -66,10 +66,18 @@ async function handlePDFGeneration(payload: {
   about_me: string;
   why_me: string;
   why_company: string;
-}): Promise<{ success: boolean; pdfData?: string; error?: string; sizeBytes?: number; suggestedFilename?: string }> {
+}): Promise<{ success: boolean; pdfData?: string; error?: string; sizeBytes?: number; suggestedFilename?: string; timings?: any }> {
   const API_ENDPOINT = 'https://cvcl-render.jollydesert-dd44d466.swedencentral.azurecontainerapps.io/render';
   
+  // Performance tracking
+  const startTime = performance.now();
+  const timings: any = {
+    start: new Date().toISOString(),
+  };
+  
   try {
+    console.log('[Background] 🚀 Starting PDF generation at', timings.start);
+    console.log('[Background] Payload size:', JSON.stringify(payload).length, 'bytes');
     console.log('[Background] Generating PDF with payload:', {
       ...payload,
       opening: payload.opening.substring(0, 50) + '...',
@@ -77,7 +85,11 @@ async function handlePDFGeneration(payload: {
     });
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    const fetchStartTime = performance.now();
+    timings.fetchStart = fetchStartTime - startTime;
+    console.log('[Background] ⏱️ Initiating fetch request...');
 
     const response = await fetch(API_ENDPOINT, {
       method: 'POST',
@@ -93,13 +105,20 @@ async function handlePDFGeneration(payload: {
       signal: controller.signal,
     });
 
+    const fetchEndTime = performance.now();
+    timings.fetchDuration = fetchEndTime - fetchStartTime;
+    timings.fetchEnd = fetchEndTime - startTime;
+    console.log('[Background] ✅ Fetch completed in', timings.fetchDuration.toFixed(2), 'ms');
+
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.error('[Background] PDF API error:', response.status, response.statusText);
+      console.error('[Background] ❌ PDF API error:', response.status, response.statusText);
+      timings.totalDuration = performance.now() - startTime;
       return {
         success: false,
         error: `API returned ${response.status}: ${response.statusText}`,
+        timings,
       };
     }
 
@@ -110,36 +129,76 @@ async function handlePDFGeneration(payload: {
       const filenameMatch = contentDisposition.match(/filename\*?=(?:"([^"]*)"|([^;,\s]*))/);
       if (filenameMatch) {
         suggestedFilename = filenameMatch[1] || filenameMatch[2];
-        console.log('[Background] Filename from header:', suggestedFilename);
+        console.log('[Background] 📄 Filename from header:', suggestedFilename);
       }
     }
 
     // Get the PDF blob
+    const blobStartTime = performance.now();
+    timings.blobStart = blobStartTime - startTime;
+    console.log('[Background] ⏱️ Converting response to blob...');
+    
     const blob = await response.blob();
-    console.log('[Background] PDF generated, size:', blob.size);
+    
+    const blobEndTime = performance.now();
+    timings.blobDuration = blobEndTime - blobStartTime;
+    timings.blobEnd = blobEndTime - startTime;
+    console.log('[Background] ✅ Blob conversion completed in', timings.blobDuration.toFixed(2), 'ms');
+    console.log('[Background] 📦 PDF size:', blob.size, 'bytes', `(${(blob.size / 1024).toFixed(2)} KB)`);
 
     // Convert blob to base64
+    const base64StartTime = performance.now();
+    timings.base64Start = base64StartTime - startTime;
+    console.log('[Background] ⏱️ Converting blob to base64...');
+    
     const base64Data = await blobToBase64(blob);
+    
+    const base64EndTime = performance.now();
+    timings.base64Duration = base64EndTime - base64StartTime;
+    timings.base64End = base64EndTime - startTime;
+    console.log('[Background] ✅ Base64 conversion completed in', timings.base64Duration.toFixed(2), 'ms');
+    console.log('[Background] 📦 Base64 size:', base64Data.length, 'bytes', `(${(base64Data.length / 1024).toFixed(2)} KB)`);
+
+    timings.totalDuration = performance.now() - startTime;
+    timings.end = new Date().toISOString();
+    
+    console.log('[Background] 🎉 PDF generation completed successfully!');
+    console.log('[Background] ⏱️ TOTAL TIME:', timings.totalDuration.toFixed(2), 'ms');
+    console.log('[Background] 📊 Performance breakdown:', {
+      fetch: `${timings.fetchDuration.toFixed(2)}ms (${((timings.fetchDuration / timings.totalDuration) * 100).toFixed(1)}%)`,
+      blob: `${timings.blobDuration.toFixed(2)}ms (${((timings.blobDuration / timings.totalDuration) * 100).toFixed(1)}%)`,
+      base64: `${timings.base64Duration.toFixed(2)}ms (${((timings.base64Duration / timings.totalDuration) * 100).toFixed(1)}%)`,
+    });
 
     return {
       success: true,
       pdfData: base64Data,
       sizeBytes: blob.size,
       suggestedFilename,
+      timings,
     };
   } catch (error) {
-    console.error('[Background] PDF generation failed:', error);
+    const errorTime = performance.now();
+    timings.totalDuration = errorTime - startTime;
+    timings.end = new Date().toISOString();
+    timings.error = true;
+    
+    console.error('[Background] ❌ PDF generation failed after', timings.totalDuration.toFixed(2), 'ms');
+    console.error('[Background] Error details:', error);
     
     if ((error as Error).name === 'AbortError') {
+      console.error('[Background] ⏱️ Request timed out after 30s');
       return {
         success: false,
         error: 'Request timeout: PDF service did not respond',
+        timings,
       };
     }
 
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
+      timings,
     };
   }
 }

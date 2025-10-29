@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { JobDetails } from '../../models/JobDetails';
 import './JobDetailsDisplay.css';
 
@@ -21,6 +21,32 @@ export const JobDetailsDisplay: React.FC<JobDetailsDisplayProps> = ({ jobDetails
   const [editedTitle, setEditedTitle] = useState(jobDetails.title);
   const [editedDescription, setEditedDescription] = useState(jobDetails.description);
   const [editedSkills, setEditedSkills] = useState(jobDetails.skills.join(', '));
+
+  // Sync local state with jobDetails prop when the actual values change
+  // Only update if not currently editing to avoid overwriting user's in-progress edits
+  useEffect(() => {
+    if (!isEditingCompany) {
+      setEditedCompany(jobDetails.company);
+    }
+  }, [jobDetails.company, isEditingCompany]);
+
+  useEffect(() => {
+    if (!isEditingTitle) {
+      setEditedTitle(jobDetails.title);
+    }
+  }, [jobDetails.title, isEditingTitle]);
+
+  useEffect(() => {
+    if (!isEditingDescription) {
+      setEditedDescription(jobDetails.description);
+    }
+  }, [jobDetails.description, isEditingDescription]);
+
+  useEffect(() => {
+    if (!isEditingSkills) {
+      setEditedSkills(jobDetails.skills.join(', '));
+    }
+  }, [jobDetails.skills, isEditingSkills]);
 
   const handleCompanySave = () => {
     onUpdate({ ...jobDetails, company: editedCompany });

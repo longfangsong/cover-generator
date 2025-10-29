@@ -286,12 +286,13 @@ function parseExperience(exp: any, warnings: string[]): Experience | null {
   }
 
   try {
+    console.log('Parsing experience entry:', exp);
     return {
       id: uuidv4(),
       company: String(exp.company).trim().substring(0, 200),
       role: String(exp.role).trim().substring(0, 200),
       startDate: new Date(exp.startDate),
-      endDate: exp.endDate ? new Date(exp.endDate) : undefined,
+      endDate: exp.endDate && exp.endDate.trim() ? new Date(exp.endDate) : undefined,
       description: String(exp.description).trim(),
       skills: Array.isArray(exp.skills) 
         ? exp.skills.filter((s: any) => typeof s === 'string').slice(0, 20)
@@ -318,8 +319,8 @@ function parseEducation(edu: any, warnings: string[]): Education | null {
       institution: String(edu.institution).trim().substring(0, 200),
       degree: String(edu.degree).trim().substring(0, 200),
       field: edu.field ? String(edu.field).trim().substring(0, 200) : undefined,
-      startDate: edu.startDate ? new Date(edu.startDate) : undefined,
-      endDate: edu.endDate ? new Date(edu.endDate) : undefined
+      startDate: edu.startDate && edu.startDate.trim() ? new Date(edu.startDate) : undefined,
+      endDate: edu.endDate && edu.endDate.trim() ? new Date(edu.endDate) : undefined
     };
   } catch (error) {
     warnings.push('Invalid date format in education');
@@ -342,7 +343,7 @@ function parseProject(proj: any, warnings: string[]): Project | null {
       name: String(proj.name).trim().substring(0, 200),
       organization: proj.organization ? String(proj.organization).trim().substring(0, 200) : undefined,
       startDate: new Date(proj.startDate),
-      endDate: proj.endDate ? new Date(proj.endDate) : undefined,
+      endDate: proj.endDate && proj.endDate.trim() ? new Date(proj.endDate) : undefined,
       description: String(proj.description).trim(),
       url: proj.url ? String(proj.url).trim() : undefined,
       skills: Array.isArray(proj.technologies) || Array.isArray(proj.skills)

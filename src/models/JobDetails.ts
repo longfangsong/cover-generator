@@ -11,6 +11,7 @@ export enum JobPlatform {
   LINKEDIN = 'LinkedIn',
   INDEED = 'Indeed',
   GLASSDOOR = 'Glassdoor',
+  ARBETSFORMEDLINGEN = 'Arbetsförmedlingen',
   MANUAL = 'Manual', // Manually entered job details
 }
 

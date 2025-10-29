@@ -112,13 +112,13 @@ export function validateExperience(exp: Experience): ValidationResult {
   }
 
   // End date validation
-  if (exp.endDate) {
+  if (exp.endDate !== undefined && exp.endDate !== null) {
     if (!(exp.endDate instanceof Date) || isNaN(exp.endDate.getTime())) {
       errors.push({
         field: 'endDate',
         message: 'End date must be a valid date',
       });
-    } else if (exp.endDate <= exp.startDate) {
+    } else if (exp.startDate instanceof Date && !isNaN(exp.startDate.getTime()) && exp.endDate <= exp.startDate) {
       errors.push({
         field: 'endDate',
         message: 'End date must be after start date',
@@ -195,13 +195,13 @@ export function validateProject(proj: Project): ValidationResult {
   }
 
   // End date validation
-  if (proj.endDate) {
+  if (proj.endDate !== undefined && proj.endDate !== null) {
     if (!(proj.endDate instanceof Date) || isNaN(proj.endDate.getTime())) {
       errors.push({
         field: 'endDate',
         message: 'End date must be a valid date',
       });
-    } else if (proj.endDate <= proj.startDate) {
+    } else if (proj.startDate instanceof Date && !isNaN(proj.startDate.getTime()) && proj.endDate <= proj.startDate) {
       errors.push({
         field: 'endDate',
         message: 'End date must be after start date',
@@ -272,20 +272,22 @@ export function validateEducation(edu: Education): ValidationResult {
   }
 
   // Date validation
-  if (edu.startDate && edu.endDate) {
+  if (edu.startDate !== undefined && edu.startDate !== null) {
     if (!(edu.startDate instanceof Date) || isNaN(edu.startDate.getTime())) {
       errors.push({
         field: 'startDate',
         message: 'Start date must be a valid date',
       });
     }
+  }
+  
+  if (edu.endDate !== undefined && edu.endDate !== null) {
     if (!(edu.endDate instanceof Date) || isNaN(edu.endDate.getTime())) {
       errors.push({
         field: 'endDate',
         message: 'End date must be a valid date',
       });
-    }
-    if (edu.endDate <= edu.startDate) {
+    } else if (edu.startDate instanceof Date && !isNaN(edu.startDate.getTime()) && edu.endDate <= edu.startDate) {
       errors.push({
         field: 'endDate',
         message: 'End date must be after start date',

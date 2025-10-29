@@ -65,7 +65,7 @@ export const UserGuide: React.FC = () => {
               <ol>
                 <li><strong>Configure AI Provider</strong> - Go to Settings tab and choose either Ollama (local) or Gemini (cloud)</li>
                 <li><strong>Create Profile</strong> - Fill in your work experience, skills, and education in the Profile tab</li>
-                <li><strong>Extract Job Details</strong> - Navigate to a LinkedIn job posting and use the Job Details tab to extract information</li>
+                <li><strong>Extract Job Details</strong> - Navigate to a LinkedIn or Arbetsförmedlingen job posting and use the Job Details tab to extract information</li>
               </ol>
 
               <div className="tip">
@@ -109,11 +109,11 @@ export const UserGuide: React.FC = () => {
           {activeSection === 'job-extraction' && (
             <div className="guide-section">
               <h4>📄 Job Extraction</h4>
-              <p>Automatically extract job details from LinkedIn postings.</p>
+              <p>Automatically extract job details from LinkedIn or Arbetsförmedlingen postings.</p>
               
               <h5>How to Extract</h5>
               <ol>
-                <li>Navigate to a LinkedIn job posting in your browser</li>
+                <li>Navigate to a LinkedIn or Arbetsförmedlingen job posting in your browser</li>
                 <li>Click the extension icon to open the popup</li>
                 <li>Go to the "Job Details" tab</li>
                 <li>Click "Extract from Page"</li>
@@ -219,7 +219,7 @@ export const UserGuide: React.FC = () => {
               <div className="troubleshooting-item">
                 <strong>❌ "Failed to extract job details"</strong>
                 <ul>
-                  <li>Make sure you're on a LinkedIn job posting page</li>
+                  <li>Make sure you're on a supported job posting page (LinkedIn or Arbetsförmedlingen)</li>
                   <li>Try refreshing the page and extracting again</li>
                   <li>Use "Enter Manually" as a fallback</li>
                 </ul>

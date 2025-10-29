@@ -29,6 +29,7 @@
     "@types/uuid": "^11.0.0",
     "@types/webextension-polyfill": "^0.10.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/coverage-v8": "4.0.3",
     "jsdom": "^27.0.1",
     "msw": "^2.11.6",
     "playwright": "^1.56.1",

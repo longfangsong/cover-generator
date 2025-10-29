@@ -6,11 +6,13 @@
 import { JobDetails } from '../models/JobDetails';
 import { ExtractorRegistry } from '../services/jobExtractor/registry';
 import { LinkedInExtractor } from '../services/jobExtractor/platforms/linkedin';
+import { ArbetsformedlingenExtractor } from '../services/jobExtractor/platforms/arbetsformedlingen';
 import { ManualExtractor } from '../services/jobExtractor/platforms/manual';
 
 // Initialize extractor registry
 const registry = new ExtractorRegistry();
 registry.register(new LinkedInExtractor());
+registry.register(new ArbetsformedlingenExtractor());
 registry.register(new ManualExtractor()); // Always register manual as fallback
 
 console.log('[Content Script] Job extraction content script loaded on:', window.location.href);

@@ -61,14 +61,17 @@ export const CoverLetterWorkflow: React.FC<CoverLetterWorkflowProps> = ({
   // Initialize PDF service
   const pdfService = createPDFExportService();
 
-  // Load cached job details on mount and auto-extract if on LinkedIn
+  // Load cached job details on mount and auto-extract if on supported job site
   useEffect(() => {
+    console.log('[CoverLetterWorkflow] Component mounted, checking for job extraction');
     let currentTabUrl = '';
 
     browser.tabs.query({ active: true, currentWindow: true })
       .then(tabs => {
+        console.log('[CoverLetterWorkflow] Active tabs:', tabs);
         if (tabs[0]?.url) {
           currentTabUrl = tabs[0].url;
+          console.log('[CoverLetterWorkflow] Current URL:', currentTabUrl);
           setCurrentUrl(currentTabUrl);
           return storageService.getCachedJob(currentTabUrl);
         }
@@ -76,43 +79,71 @@ export const CoverLetterWorkflow: React.FC<CoverLetterWorkflowProps> = ({
       })
       .then(cached => {
         if (cached) {
+          console.log('[CoverLetterWorkflow] Found cached job:', cached);
           setJobDetails(cached);
           if (onJobExtracted) {
             onJobExtracted(cached);
           }
-        } else if (currentTabUrl.includes('linkedin.com/jobs')) {
-          // Auto-extract if on LinkedIn job page and no cache
-          handleExtractJob();
+        } else {
+          // Auto-extract if on supported job page and no cache
+          const isSupportedPage = currentTabUrl.includes('linkedin.com/jobs') || 
+                                   currentTabUrl.includes('arbetsformedlingen.se/platsbanken/annonser');
+          console.log('[CoverLetterWorkflow] Is supported page?', isSupportedPage);
+          console.log('[CoverLetterWorkflow] LinkedIn check:', currentTabUrl.includes('linkedin.com/jobs'));
+          console.log('[CoverLetterWorkflow] Arbetsförmedlingen check:', currentTabUrl.includes('arbetsformedlingen.se/platsbanken/annonser'));
+          
+          if (isSupportedPage) {
+            console.log('[CoverLetterWorkflow] Auto-extracting job details...');
+            handleExtractJob();
+          } else {
+            console.log('[CoverLetterWorkflow] Not a supported job page, skipping auto-extraction');
+          }
         }
       })
       .catch(err => {
-        console.error('Failed to load cached job:', err);
+        console.error('[CoverLetterWorkflow] Failed to load cached job:', err);
       });
-  }, [onJobExtracted]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   const handleExtractJob = async () => {
+    console.log('[CoverLetterWorkflow] handleExtractJob called');
     setIsExtracting(true);
     setExtractionError(null);
 
     try {
+      console.log('[CoverLetterWorkflow] Querying active tab...');
       const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      console.log('[CoverLetterWorkflow] Found tabs:', tabs);
 
       if (!tabs[0]?.id) {
         throw new Error('No active tab found');
       }
 
       const currentTabUrl = tabs[0].url || '';
+      console.log('[CoverLetterWorkflow] Current tab URL:', currentTabUrl);
+      console.log('[CoverLetterWorkflow] Tab ID:', tabs[0].id);
 
-      if (!currentTabUrl.includes('linkedin.com/jobs')) {
-        throw new Error('Please navigate to a LinkedIn job posting to extract job details');
+      // Check if we're on a supported page
+      const isSupportedPage = currentTabUrl.includes('linkedin.com/jobs') || 
+                              currentTabUrl.includes('arbetsformedlingen.se/platsbanken/annonser');
+      
+      console.log('[CoverLetterWorkflow] Is supported page?', isSupportedPage);
+
+      if (!isSupportedPage) {
+        throw new Error('Please navigate to a LinkedIn or Arbetsförmedlingen job posting to extract job details');
       }
 
       try {
+        console.log('[CoverLetterWorkflow] Sending EXTRACT_JOB_DETAILS message to tab:', tabs[0].id);
         const response = await browser.tabs.sendMessage(tabs[0].id, {
           type: 'EXTRACT_JOB_DETAILS',
         }) as { success: boolean; data?: JobDetails; error?: string };
 
+        console.log('[CoverLetterWorkflow] Received response:', response);
+
         if (response.success && response.data) {
+          console.log('[CoverLetterWorkflow] Extraction successful:', response.data);
           setJobDetails(response.data);
           await storageService.cacheJobDetails(response.data);
           setExtractionError(null);
@@ -120,22 +151,24 @@ export const CoverLetterWorkflow: React.FC<CoverLetterWorkflowProps> = ({
             onJobExtracted(response.data);
           }
         } else {
+          console.error('[CoverLetterWorkflow] Extraction failed:', response.error);
           setExtractionError(response.error || 'Failed to extract job details');
         }
       } catch (msgError) {
-        console.error('Message sending failed:', msgError);
+        console.error('[CoverLetterWorkflow] Message sending failed:', msgError);
         throw new Error(
           'Content script not ready. Please refresh the page and try again.'
         );
       }
     } catch (err) {
-      console.error('Extraction error:', err);
+      console.error('[CoverLetterWorkflow] Extraction error:', err);
       setExtractionError(
         err instanceof Error
           ? err.message
           : 'Cannot auto-detect job details. Please enter job information manually.'
       );
     } finally {
+      console.log('[CoverLetterWorkflow] Extraction complete, loading:', false);
       setIsExtracting(false);
     }
   };
@@ -282,6 +315,9 @@ export const CoverLetterWorkflow: React.FC<CoverLetterWorkflowProps> = ({
     setExportLoading(true);
     setExportError(null);
 
+    const exportStartTime = performance.now();
+    console.log('[CoverLetterWorkflow] 🚀 Starting PDF export at', new Date().toISOString());
+
     try {
       const renderRequest = {
         content: {
@@ -302,7 +338,22 @@ export const CoverLetterWorkflow: React.FC<CoverLetterWorkflowProps> = ({
         },
       };
 
+      console.log('[CoverLetterWorkflow] 📄 Content sizes:', {
+        opening: renderRequest.content.opening.length,
+        aboutMe: renderRequest.content.aboutMe.length,
+        whyMe: renderRequest.content.whyMe.length,
+        whyCompany: renderRequest.content.whyCompany.length,
+        total: Object.values(renderRequest.content).reduce((sum, text) => sum + text.length, 0),
+      });
+
+      const pdfStartTime = performance.now();
+      console.log('[CoverLetterWorkflow] ⏱️ Calling PDF service...');
+      
       const response = await pdfService.generatePDF(renderRequest);
+      
+      const pdfEndTime = performance.now();
+      const pdfDuration = pdfEndTime - pdfStartTime;
+      console.log('[CoverLetterWorkflow] ✅ PDF service returned in', pdfDuration.toFixed(2), 'ms');
 
       let filename = response.metadata?.suggestedFilename;
       if (!filename) {
@@ -311,10 +362,29 @@ export const CoverLetterWorkflow: React.FC<CoverLetterWorkflowProps> = ({
         filename = `CoverLetter_${companyName}_${date}`;
       }
 
+      console.log('[CoverLetterWorkflow] 💾 Downloading PDF:', filename);
+      const downloadStartTime = performance.now();
+      
       pdfService.downloadPDF(response.pdfData!, filename);
+      
+      const downloadEndTime = performance.now();
+      const downloadDuration = downloadEndTime - downloadStartTime;
+      const totalDuration = downloadEndTime - exportStartTime;
+      
+      console.log('[CoverLetterWorkflow] ✅ Download triggered in', downloadDuration.toFixed(2), 'ms');
+      console.log('[CoverLetterWorkflow] 🎉 TOTAL EXPORT TIME:', totalDuration.toFixed(2), 'ms');
+      console.log('[CoverLetterWorkflow] 📊 Performance breakdown:', {
+        preparation: `${(pdfStartTime - exportStartTime).toFixed(2)}ms`,
+        pdfGeneration: `${pdfDuration.toFixed(2)}ms (${((pdfDuration / totalDuration) * 100).toFixed(1)}%)`,
+        download: `${downloadDuration.toFixed(2)}ms`,
+      });
+      
       setExportLoading(false);
     } catch (err) {
-      console.error('[CoverLetterWorkflow] Export failed:', err);
+      const errorTime = performance.now();
+      const totalDuration = errorTime - exportStartTime;
+      console.error('[CoverLetterWorkflow] ❌ Export failed after', totalDuration.toFixed(2), 'ms');
+      console.error('[CoverLetterWorkflow] Error details:', err);
 
       if (err instanceof GenerationError) {
         setExportError('PDF export failed. Please copy text manually.');
@@ -411,7 +481,7 @@ export const CoverLetterWorkflow: React.FC<CoverLetterWorkflowProps> = ({
 
           {!isLinkedInJobPage && !jobDetails && (
             <div className="info-message">
-              <p>Navigate to a LinkedIn job posting to auto-extract details, or enter them manually below.</p>
+              <p>Navigate to a job posting to auto-extract details, or enter them manually below.</p>
             </div>
           )}
 

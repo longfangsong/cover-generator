@@ -80,7 +80,7 @@ export class PDFExportService {
   constructor(config: Config) {
     this.config = {
       apiEndpoint: config.apiEndpoint,
-      timeout: config.timeout ?? 30000,
+      timeout: config.timeout ?? 5000,
       retry: {
         maxAttempts: config.retry?.maxAttempts ?? 2,
         delayMs: config.retry?.delayMs ?? 1000,
@@ -95,16 +95,25 @@ export class PDFExportService {
     // Validate request
     this.validateRequest(request);
 
+    console.log('[PDFExportService] 🚀 Starting PDF generation with', this.config.retry.maxAttempts + 1, 'max attempts');
+    
     // Try with retries
     let lastError: Error | null = null;
     for (let attempt = 0; attempt <= this.config.retry.maxAttempts; attempt++) {
       try {
         if (attempt > 0) {
+          console.log('[PDFExportService] ⏱️ Retry attempt', attempt, 'after', this.config.retry.delayMs, 'ms delay');
           // Wait before retry
           await delay(this.config.retry.delayMs);
+        } else {
+          console.log('[PDFExportService] 🔄 Attempt', attempt + 1, 'of', this.config.retry.maxAttempts + 1);
         }
 
+        const attemptStartTime = performance.now();
         const response = await this.callAPI(request);
+        const attemptDuration = performance.now() - attemptStartTime;
+        
+        console.log('[PDFExportService] ⏱️ Attempt', attempt + 1, 'completed in', attemptDuration.toFixed(2), 'ms');
         
         if (!response.success || !response.pdfData) {
           throw new GenerationError(
@@ -113,19 +122,23 @@ export class PDFExportService {
           );
         }
 
+        console.log('[PDFExportService] ✅ PDF generation successful on attempt', attempt + 1);
         return response;
       } catch (error) {
         lastError = error as Error;
+        console.warn('[PDFExportService] ⚠️ Attempt', attempt + 1, 'failed:', (error as Error).message);
         
         // Don't retry on validation errors
         if (error instanceof GenerationError && 
             error.code === GenerationErrorCode.INVALID_REQUEST) {
+          console.error('[PDFExportService] ❌ Validation error, not retrying');
           throw error;
         }
       }
     }
 
     // All retries failed
+    console.error('[PDFExportService] ❌ All', this.config.retry.maxAttempts + 1, 'attempts failed');
     throw lastError ?? new GenerationError(
       'PDF generation failed after retries',
       GenerationErrorCode.UNKNOWN
@@ -255,8 +268,13 @@ export class PDFExportService {
       );
     }
 
+    const messageStartTime = performance.now();
+    console.log('[PDFExportService] 📤 Sending message to background script...');
+
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
+        const elapsed = performance.now() - messageStartTime;
+        console.error('[PDFExportService] ⏱️ Message timeout after', elapsed.toFixed(2), 'ms');
         reject(new GenerationError(
           'Request timeout: Background script did not respond',
           GenerationErrorCode.TIMEOUT
@@ -271,12 +289,21 @@ export class PDFExportService {
         (response: any) => {
           clearTimeout(timeout);
           
+          const messageEndTime = performance.now();
+          const messageDuration = messageEndTime - messageStartTime;
+          console.log('[PDFExportService] 📥 Received response from background in', messageDuration.toFixed(2), 'ms');
+          
           if (runtime.lastError) {
+            console.error('[PDFExportService] ❌ Message passing failed:', runtime.lastError.message);
             reject(new GenerationError(
               `Message passing failed: ${runtime.lastError.message}`,
               GenerationErrorCode.UNKNOWN
             ));
             return;
+          }
+
+          if (response?.timings) {
+            console.log('[PDFExportService] 📊 Background timing breakdown:', response.timings);
           }
 
           resolve(response);

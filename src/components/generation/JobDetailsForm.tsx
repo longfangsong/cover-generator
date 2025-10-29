@@ -39,14 +39,16 @@ export const JobDetailsForm: React.FC<JobDetailsFormProps> = ({ jobDetails, onUp
   };
 
   // Update local state when jobDetails prop changes (after extraction)
+  // Only sync if the incoming values are different from current local state
   React.useEffect(() => {
     if (jobDetails) {
-      setCompany(jobDetails.company);
-      setTitle(jobDetails.title);
-      setDescription(jobDetails.description);
-      setSkills(jobDetails.skills.join(', '));
+      if (jobDetails.company !== company) setCompany(jobDetails.company);
+      if (jobDetails.title !== title) setTitle(jobDetails.title);
+      if (jobDetails.description !== description) setDescription(jobDetails.description);
+      const incomingSkills = jobDetails.skills.join(', ');
+      if (incomingSkills !== skills) setSkills(incomingSkills);
     }
-  }, [jobDetails]);
+  }, [jobDetails?.id]); // Only trigger when a different job is loaded (by ID change)
 
   return (
     <div className="job-details-form">
@@ -56,10 +58,8 @@ export const JobDetailsForm: React.FC<JobDetailsFormProps> = ({ jobDetails, onUp
           id="company"
           type="text"
           value={company}
-          onChange={e => {
-            setCompany(e.target.value);
-            handleUpdate();
-          }}
+          onChange={e => setCompany(e.target.value)}
+          onBlur={handleUpdate}
           placeholder="e.g., Google"
           maxLength={200}
         />
@@ -71,10 +71,8 @@ export const JobDetailsForm: React.FC<JobDetailsFormProps> = ({ jobDetails, onUp
           id="title"
           type="text"
           value={title}
-          onChange={e => {
-            setTitle(e.target.value);
-            handleUpdate();
-          }}
+          onChange={e => setTitle(e.target.value)}
+          onBlur={handleUpdate}
           placeholder="e.g., Senior Software Engineer"
           maxLength={200}
         />
@@ -85,10 +83,8 @@ export const JobDetailsForm: React.FC<JobDetailsFormProps> = ({ jobDetails, onUp
         <textarea
           id="description"
           value={description}
-          onChange={e => {
-            setDescription(e.target.value);
-            handleUpdate();
-          }}
+          onChange={e => setDescription(e.target.value)}
+          onBlur={handleUpdate}
           placeholder="Paste or enter the job description here..."
           rows={8}
           maxLength={10000}
