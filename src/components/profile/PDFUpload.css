@@ -1,0 +1,107 @@
+/**
+ * PDFUpload Component Styles
+ */
+
+.pdf-upload {
+  margin: 16px 0;
+  padding: 20px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  text-align: center;
+  background-color: #f9fafb;
+  transition: all 0.2s ease;
+}
+
+.pdf-upload:hover {
+  border-color: #9ca3af;
+  background-color: #f3f4f6;
+}
+
+.pdf-upload-button {
+  display: flex;
+  margin-left: auto;
+  margin-right: auto;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pdf-upload-button:hover:not(:disabled) {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.pdf-upload-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.pdf-upload-button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.upload-icon {
+  flex-shrink: 0;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.file-name {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.extraction-status {
+  margin-top: 12px;
+  padding: 8px 16px;
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.upload-info {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.upload-info p {
+  margin: 4px 0;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.upload-info p:first-child {
+  font-weight: 500;
+  color: #6b7280;
+}

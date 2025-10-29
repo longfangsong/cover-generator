@@ -1,6 +1,27 @@
 {
   "{{chrome}}.manifest_version": 3,
   "{{firefox}}.manifest_version": 2,
+  "permissions": ["storage", "activeTab"],
+  "{{chrome}}.host_permissions": [
+    "https://www.linkedin.com/*",
+    "https://linkedin.com/*",
+    "https://cvcl-render.jollydesert-dd44d466.swedencentral.azurecontainerapps.io/*"
+  ],
+  "{{firefox}}.permissions": [
+    "https://www.linkedin.com/*",
+    "https://linkedin.com/*",
+    "https://cvcl-render.jollydesert-dd44d466.swedencentral.azurecontainerapps.io/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.linkedin.com/jobs/*",
+        "https://linkedin.com/jobs/*"
+      ],
+      "js": ["src/services/jobExtractor/client.ts"],
+      "run_at": "document_idle"
+    }
+  ],
   "icons": {
     "16": "icon/16.png",
     "32": "icon/32.png",
