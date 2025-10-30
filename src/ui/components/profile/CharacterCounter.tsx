@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { countWords } from '../../utils/formatters';
+import { countWords } from '../../../utils/formatters';
 
 interface CharacterCounterProps {
   text: string;

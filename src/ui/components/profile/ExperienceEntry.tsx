@@ -1,46 +1,47 @@
 /**
- * ProjectEntry Component
- * Individual project entry (without company field)
+ * ExperienceEntry Component
+ * Individual experience entry with all fields
  */
 
 import React from 'react';
-import { Project } from '../../models/Project';
+import { Experience } from '../../../models/Experience';
 import { CharacterCounter } from './CharacterCounter';
 import { SkillsInput } from './SkillsInput';
+import { formatDate } from '../../../utils/formatters';
 
-interface ProjectEntryProps {
-  project: Project;
+interface ExperienceEntryProps {
+  experience: Experience;
   index: number;
-  onChange: (updated: Project) => void;
+  onChange: (updated: Experience) => void;
   onRemove: () => void;
   canRemove: boolean;
   errors: Record<string, string>;
 }
 
-export const ProjectEntry: React.FC<ProjectEntryProps> = ({
-  project,
+export const ExperienceEntry: React.FC<ExperienceEntryProps> = ({
+  experience,
   index,
   onChange,
   onRemove,
   canRemove,
   errors,
 }) => {
-  const fieldPrefix = `projects[${index}]`;
+  const fieldPrefix = `experience[${index}]`;
 
-  const handleChange = (field: keyof Project, value: any) => {
-    onChange({ ...project, [field]: value });
+  const handleChange = (field: keyof Experience, value: any) => {
+    onChange({ ...experience, [field]: value });
   };
 
   return (
     <div className="experience-entry">
       <div className="entry-header">
-        <h4>Project #{index + 1}</h4>
+        <h4>Experience #{index + 1}</h4>
         {canRemove && (
           <button
             type="button"
             onClick={onRemove}
             className="btn-remove"
-            aria-label="Remove project"
+            aria-label="Remove experience"
           >
             ✕
           </button>
@@ -48,51 +49,51 @@ export const ProjectEntry: React.FC<ProjectEntryProps> = ({
       </div>
 
       <div className="form-group">
-        <label htmlFor={`name-${project.id}`}>
-          Project Name / Title <span className="required">*</span>
+        <label htmlFor={`company-${experience.id}`}>
+          Company/Organization (optional for projects)
         </label>
         <input
-          id={`name-${project.id}`}
+          id={`company-${experience.id}`}
           type="text"
-          value={project.name}
-          onChange={(e) => handleChange('name', e.target.value)}
-          placeholder="Personal Website, Mobile App, etc."
-          required
+          value={experience.company || ''}
+          onChange={(e) => handleChange('company', e.target.value || undefined)}
+          placeholder="Company or Organization Name"
           maxLength={200}
         />
-        {errors[`${fieldPrefix}.name`] && (
-          <span className="error">{errors[`${fieldPrefix}.name`]}</span>
+        {errors[`${fieldPrefix}.company`] && (
+          <span className="error">{errors[`${fieldPrefix}.company`]}</span>
         )}
       </div>
 
       <div className="form-group">
-        <label htmlFor={`organization-${project.id}`}>
-          Organization / Context (optional)
+        <label htmlFor={`role-${experience.id}`}>
+          Role / Position <span className="required">*</span>
         </label>
         <input
-          id={`organization-${project.id}`}
+          id={`role-${experience.id}`}
           type="text"
-          value={project.organization || ''}
-          onChange={(e) => handleChange('organization', e.target.value || undefined)}
-          placeholder="University, Hackathon, Open Source, etc."
+          value={experience.role}
+          onChange={(e) => handleChange('role', e.target.value)}
+          placeholder="Software Engineer"
+          required
           maxLength={200}
         />
-        {errors[`${fieldPrefix}.organization`] && (
-          <span className="error">{errors[`${fieldPrefix}.organization`]}</span>
+        {errors[`${fieldPrefix}.role`] && (
+          <span className="error">{errors[`${fieldPrefix}.role`]}</span>
         )}
       </div>
 
       <div className="form-row">
         <div className="form-group">
-          <label htmlFor={`startDate-${project.id}`}>
+          <label htmlFor={`startDate-${experience.id}`}>
             Start Date <span className="required">*</span>
           </label>
           <input
-            id={`startDate-${project.id}`}
+            id={`startDate-${experience.id}`}
             type="date"
             value={
-              project.startDate instanceof Date && !isNaN(project.startDate.getTime())
-                ? project.startDate.toISOString().split('T')[0]
+              experience.startDate instanceof Date && !isNaN(experience.startDate.getTime())
+                ? experience.startDate.toISOString().split('T')[0]
                 : ''
             }
             onChange={(e) => {
@@ -111,13 +112,13 @@ export const ProjectEntry: React.FC<ProjectEntryProps> = ({
         </div>
 
         <div className="form-group">
-          <label htmlFor={`endDate-${project.id}`}>End Date</label>
+          <label htmlFor={`endDate-${experience.id}`}>End Date</label>
           <input
-            id={`endDate-${project.id}`}
+            id={`endDate-${experience.id}`}
             type="date"
             value={
-              project.endDate instanceof Date && !isNaN(project.endDate.getTime())
-                ? project.endDate.toISOString().split('T')[0]
+              experience.endDate instanceof Date && !isNaN(experience.endDate.getTime())
+                ? experience.endDate.toISOString().split('T')[0]
                 : ''
             }
             onChange={(e) => {
@@ -131,7 +132,7 @@ export const ProjectEntry: React.FC<ProjectEntryProps> = ({
               }
             }}
           />
-          <small className="hint">Leave empty if ongoing</small>
+          <small className="hint">Leave empty if current position</small>
           {errors[`${fieldPrefix}.endDate`] && (
             <span className="error">{errors[`${fieldPrefix}.endDate`]}</span>
           )}
@@ -139,19 +140,19 @@ export const ProjectEntry: React.FC<ProjectEntryProps> = ({
       </div>
 
       <div className="form-group">
-        <label htmlFor={`description-${project.id}`}>
+        <label htmlFor={`description-${experience.id}`}>
           Description <span className="required">*</span>
         </label>
         <textarea
-          id={`description-${project.id}`}
-          value={project.description}
+          id={`description-${experience.id}`}
+          value={experience.description}
           onChange={(e) => handleChange('description', e.target.value)}
-          placeholder="Describe the project, your role, technologies used, and outcomes..."
+          placeholder="Describe your responsibilities and achievements..."
           required
           rows={5}
         />
         <CharacterCounter
-          text={project.description}
+          text={experience.description}
           minWords={10}
           maxWords={1000}
           countType="words"
@@ -162,9 +163,9 @@ export const ProjectEntry: React.FC<ProjectEntryProps> = ({
       </div>
 
       <div className="form-group">
-        <label htmlFor={`skills-${project.id}`}>Skills / Technologies Used</label>
+        <label htmlFor={`skills-${experience.id}`}>Skills Used</label>
         <SkillsInput
-          value={project.skills || []}
+          value={experience.skills || []}
           onChange={(skills) => handleChange('skills', skills.length > 0 ? skills : undefined)}
           maxSkills={20}
         />

@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Education } from '../../models/Education';
+import { Education } from '../../../models/Education';
 
 interface EducationEntryProps {
   education: Education;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CoverLetterContent } from '../../models/CoverLetterContent';
+import { CoverLetterContent } from '../../../models/CoverLetterContent';
 import './CoverLetterPreview.css';
 
 interface CoverLetterPreviewProps {

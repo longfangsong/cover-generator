@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { BrowserStorageService } from '../../infra/storage/BrowserStorageService';
+import { BrowserStorageService } from '../../../infra/storage';
 import './DataManagement.css';
 
 export const DataManagement: React.FC = () => {

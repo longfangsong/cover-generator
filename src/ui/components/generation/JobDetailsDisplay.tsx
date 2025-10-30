@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { JobDetails } from '../../models/JobDetails';
+import { JobDetails } from '../../../models/JobDetails';
 import './JobDetailsDisplay.css';
 
 interface JobDetailsDisplayProps {

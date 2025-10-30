@@ -10,7 +10,7 @@ import { UserProfile } from '../../models/UserProfile';
 import { Experience } from '../../models/Experience';
 import { Education } from '../../models/Education';
 import { Project } from '../../models/Project';
-import { BrowserStorageService } from '../../infra/storage/BrowserStorageService';
+import { BrowserStorageService } from '../../infra/storage';
 import { buildResumeExtractionPrompt } from './prompt';
 import { createLogger } from '../../utils/logger';
 import { v4 as uuidv4 } from 'uuid';

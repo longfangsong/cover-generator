@@ -4,17 +4,17 @@
  */
 
 import React, { useState } from 'react';
-import { UserProfile } from '../../models/UserProfile';
-import { JobDetails } from '../../models/JobDetails';
-import { CoverLetterContent, CoverLetterState, LLMProviderEnum } from '../../models/CoverLetterContent';
-import { LLMProviderConfig } from '../../models/LLMProviderConfig';
+import { UserProfile } from '../../../models/UserProfile';
+import { JobDetails } from '../../../models/JobDetails';
+import { CoverLetterContent, CoverLetterState, LLMProviderEnum } from '../../../models/CoverLetterContent';
+import { LLMProviderConfig } from '../../../models/LLMProviderConfig';
 import { GenerationButton } from './GenerationButton';
 import { CoverLetterEditor } from './CoverLetterEditor';
 import { CoverLetterPreview } from './CoverLetterPreview';
-import { validateInputs, generateCoverLetter, updateCoverLetterSection } from '../../services/coverLetterGeneration';
-import { createPDFExportService } from '../../services/coverLetterGeneration/export';
-import { GenerationError } from '../../services/coverLetterGeneration/error';
-import { llmRegistry } from '../../infra/llm';
+import { validateInputs, generateCoverLetter, updateCoverLetterSection } from '../../../services/coverLetterGeneration';
+import { createPDFExportService } from '../../../services/coverLetterGeneration/export';
+import { GenerationError } from '../../../services/coverLetterGeneration/error';
+import { llmRegistry } from '../../../infra/llm';
 
 interface CoverLetterGenerationProps {
   profile: UserProfile | null;

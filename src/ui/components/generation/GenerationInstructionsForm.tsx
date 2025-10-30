@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { SectionInstructions } from '../../services/coverLetterGeneration/prompt';
+import { SectionInstructions } from '../../../services/coverLetterGeneration/prompt';
 import './GenerationInstructionsForm.css';
 
 interface GenerationInstructionsFormProps {

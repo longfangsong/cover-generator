@@ -6,7 +6,7 @@
 import { GenerationJob, GenerationJobStatus, updateJobStatus } from '../../models/GenerationJob';
 import { UserProfile } from '../../models/UserProfile';
 import { JobDetails } from '../../models/JobDetails';
-import { BrowserStorageService } from '../../infra/storage/BrowserStorageService';
+import { BrowserStorageService } from '../../infra/storage';
 import { generateCoverLetter } from '../coverLetterGeneration';
 import { llmRegistry } from '../../infra/llm';
 import { LLMProviderEnum } from '../../models/CoverLetterContent';

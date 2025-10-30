@@ -4,9 +4,9 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { BrowserStorageService } from '../../infra/storage/BrowserStorageService';
+import { BrowserStorageService } from '../../../infra/storage';
 import './UsageMetrics.css';
-import { globalRateLimiter } from '../../infra/llm/rateLimiter';
+import { globalRateLimiter } from '../../../infra/llm/rateLimiter';
 
 interface UsageStats {
   totalGenerations: number;

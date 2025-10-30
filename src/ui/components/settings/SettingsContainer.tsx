@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { LLMProviderConfig } from '../../models/LLMProviderConfig';
+import { LLMProviderConfig } from '../../../models/LLMProviderConfig';
 import { ProviderSettings } from './ProviderSettings';
 import { UsageMetrics } from './UsageMetrics';
 import { DataManagement } from './DataManagement';

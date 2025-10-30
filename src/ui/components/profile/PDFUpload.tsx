@@ -6,9 +6,9 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { pdfParserService, PDFParseError } from '../../infra/pdfParsing';
-import { extractProfile } from '../../services/resumeExtractor';
-import { UserProfile } from '../../models/UserProfile';
+import { pdfParserService, PDFParseError } from '../../../infra/pdfParsing';
+import { extractProfile } from '../../../services/resumeExtractor';
+import { UserProfile } from '../../../models/UserProfile';
 import './PDFUpload.css';
 
 interface PDFUploadProps {

@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { LLMProviderConfig } from '../../models/LLMProviderConfig';
-import { LLMProviderEnum } from '../../models/CoverLetterContent';
+import { LLMProviderConfig } from '../../../models/LLMProviderConfig';
+import { LLMProviderEnum } from '../../../models/CoverLetterContent';
 import './ProviderSettings.css';
 
 interface ProviderSettingsProps {

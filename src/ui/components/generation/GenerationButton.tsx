@@ -30,10 +30,10 @@ export const GenerationButton: React.FC<GenerationButtonProps> = ({
         {loading ? (
           <>
             <span className="loading-spinner"></span>
-            Generating your cover letter...
+            Queueing generation job...
           </>
         ) : (
-          'Generate Cover Letter'
+          'Generate Cover Letter (Background)'
         )}
       </button>
       {error && (

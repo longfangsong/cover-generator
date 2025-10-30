@@ -4,17 +4,17 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { UserProfile } from '../../models/UserProfile';
-import { Experience } from '../../models/Experience';
-import { Project } from '../../models/Project';
-import { Education } from '../../models/Education';
+import { UserProfile } from '../../../models/UserProfile';
+import { Experience } from '../../../models/Experience';
+import { Project } from '../../../models/Project';
+import { Education } from '../../../models/Education';
 import { ExperienceEntry } from './ExperienceEntry';
 import { ProjectEntry } from './ProjectEntry';
 import { EducationEntry } from './EducationEntry';
 import { SkillsInput } from './SkillsInput';
 import { PDFUpload } from './PDFUpload';
 import './ProfileForm.css';
-import { validateProfile } from '../../models/validation/ProfileValidator';
+import { validateProfile } from '../../../models/validation/ProfileValidator';
 
 interface ProfileFormProps {
   initialProfile?: UserProfile | null;

@@ -7,7 +7,7 @@ import { UserProfile } from '../../models/UserProfile';
 import { JobDetails } from '../../models/JobDetails';
 import { CoverLetterContent, CoverLetterState, LLMProviderEnum } from '../../models/CoverLetterContent';
 import { buildPrompt, SectionInstructions } from './prompt';
-import { BrowserStorageService } from '../../infra/storage/BrowserStorageService';
+import { BrowserStorageService } from '../../infra/storage';
 import { createLogger } from '../../utils/logger';
 import { validateJobDetails } from '../../models/validation/JobDetailsValidator';
 import { globalRateLimiter } from '../../infra/llm/rateLimiter';

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import browser from 'webextension-polyfill';
-import { JobDetails } from '../../models/JobDetails';
-import { BrowserStorageService } from '../../infra/storage/BrowserStorageService';
+import { JobDetails } from '../../../models/JobDetails';
+import { BrowserStorageService } from '../../../infra/storage';
 import { JobDetailsDisplay } from './JobDetailsDisplay';
 import './JobExtraction.css';
 

@@ -1,21 +1,22 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { UserProfile } from '../models/UserProfile';
-import { JobDetails } from '../models/JobDetails';
-import { LLMProviderConfig } from '../models/LLMProviderConfig';
-import { BrowserStorageService } from '../infra/storage/BrowserStorageService';
+import { UserProfile } from '../../models/UserProfile';
+import { JobDetails } from '../../models/JobDetails';
+import { LLMProviderConfig } from '../../models/LLMProviderConfig';
+import { BrowserStorageService } from '../../infra/storage';
 import './Popup.css';
 
 // Lazy load components for better initial load time
 const ProfileForm = lazy(() => import('../components/profile/ProfileForm').then(m => ({ default: m.ProfileForm })));
 const CoverLetterWorkflow = lazy(() => import('../components/generation/CoverLetterGenerationMerged').then(m => ({ default: m.CoverLetterWorkflow })));
 const SettingsContainer = lazy(() => import('../components/settings/SettingsContainer').then(m => ({ default: m.SettingsContainer })));
+const GenerationJobsPanel = lazy(() => import('../components/generation/GenerationJobsPanel').then(m => ({ default: m.GenerationJobsPanel })));
 
 // Import loading skeleton immediately (it's small)
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { OfflineIndicator } from '../components/common/OfflineIndicator';
-import { llmRegistry } from '../infra/llm';
+import { llmRegistry } from '../../infra/llm';
 
-type Tab = 'profile' | 'generate' | 'settings';
+type Tab = 'profile' | 'generate' | 'jobs' | 'settings';
 
 export default function Popup() {
   const [activeTab, setActiveTab] = useState<Tab>('profile');
@@ -24,6 +25,7 @@ export default function Popup() {
   const [providerConfig, setProviderConfig] = useState<LLMProviderConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [jobsRefreshTrigger, setJobsRefreshTrigger] = useState(0);
 
   const storageService = new BrowserStorageService();
 
@@ -102,6 +104,13 @@ export default function Popup() {
   const handleJobExtracted = (job: JobDetails) => {
     setJobDetails(job);
     showToast('Job details updated!', 'success');
+  };
+
+  const handleGenerationStarted = () => {
+    setJobsRefreshTrigger(prev => prev + 1);
+    showToast('Cover letter generation started!', 'success');
+    // Switch to jobs tab to show progress
+    setActiveTab('jobs');
   };
 
   const handleSaveProviderConfig = async (config: LLMProviderConfig) => {
@@ -197,6 +206,13 @@ export default function Popup() {
             Generate
           </button>
           <button
+            className={`tab ${activeTab === 'jobs' ? 'active' : ''}`}
+            onClick={() => setActiveTab('jobs')}
+            disabled={!profile}
+          >
+            Jobs
+          </button>
+          <button
             className={`tab ${activeTab === 'settings' ? 'active' : ''}`}
             onClick={() => setActiveTab('settings')}
           >
@@ -219,6 +235,15 @@ export default function Popup() {
               profile={profile}
               providerConfig={providerConfig}
               onJobExtracted={handleJobExtracted}
+              onGenerationStarted={handleGenerationStarted}
+            />
+          )}
+
+          {activeTab === 'jobs' && profile && (
+            <GenerationJobsPanel
+              profileId={profile.id}
+              profile={profile}
+              refreshTrigger={jobsRefreshTrigger}
             />
           )}
 

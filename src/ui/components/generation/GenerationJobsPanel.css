@@ -6,7 +6,8 @@
   padding: 1rem;
   background: var(--vscode-editor-background);
   border-radius: 4px;
-  margin-bottom: 1rem;
+  height: 100%;
+  overflow-y: auto;
 }
 
 .panel-header {
@@ -197,6 +198,17 @@
 
 .view-button:hover {
   background: var(--vscode-button-hoverBackground);
+}
+
+.retry-button {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border-color: var(--vscode-charts-orange);
+}
+
+.retry-button:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+  border-color: var(--vscode-charts-yellow);
 }
 
 .delete-button {

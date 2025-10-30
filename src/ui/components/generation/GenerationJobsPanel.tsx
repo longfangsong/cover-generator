@@ -4,27 +4,34 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { GenerationJob, GenerationJobStatus } from '../../models/GenerationJob';
-import { BrowserStorageService } from '../../infra/storage/BrowserStorageService';
-import { CoverLetterContent } from '../../models/CoverLetterContent';
+import browser from 'webextension-polyfill';
+import { GenerationJob, GenerationJobStatus, createGenerationJob } from '../../../models/GenerationJob';
+import { BrowserStorageService } from '../../../infra/storage';
+import { CoverLetterContent } from '../../../models/CoverLetterContent';
+import { UserProfile } from '../../../models/UserProfile';
+import { CoverLetterViewer } from './CoverLetterViewer';
 import './GenerationJobsPanel.css';
 
 const storageService = new BrowserStorageService();
 
 interface GenerationJobsPanelProps {
   profileId: string | null;
-  onViewCoverLetter?: (coverLetter: CoverLetterContent) => void;
+  profile: UserProfile | null;
   refreshTrigger?: number; // Optional prop to trigger refresh
 }
 
 export const GenerationJobsPanel: React.FC<GenerationJobsPanelProps> = ({
   profileId,
-  onViewCoverLetter,
+  profile,
   refreshTrigger,
 }) => {
   const [jobs, setJobs] = useState<GenerationJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [viewingCoverLetter, setViewingCoverLetter] = useState<{
+    coverLetter: CoverLetterContent;
+    job: GenerationJob;
+  } | null>(null);
 
   const loadJobs = async () => {
     if (!profileId) {
@@ -61,15 +68,31 @@ export const GenerationJobsPanel: React.FC<GenerationJobsPanelProps> = ({
   }, [profileId, refreshTrigger]);
 
   const handleViewCoverLetter = async (job: GenerationJob) => {
-    if (!job.coverLetterId || !onViewCoverLetter) return;
+    if (!job.coverLetterId) return;
 
     try {
       const coverLetter = await storageService.loadCoverLetter(job.coverLetterId);
       if (coverLetter) {
-        onViewCoverLetter(coverLetter);
+        setViewingCoverLetter({ coverLetter, job });
       }
     } catch (err) {
       console.error('Failed to load cover letter:', err);
+    }
+  };
+
+  const handleCloseCoverLetter = () => {
+    setViewingCoverLetter(null);
+  };
+
+  const handleUpdateCoverLetter = async (updatedCoverLetter: CoverLetterContent) => {
+    // Update in storage
+    await storageService.saveCoverLetter(updatedCoverLetter);
+    // Update local state
+    if (viewingCoverLetter) {
+      setViewingCoverLetter({
+        ...viewingCoverLetter,
+        coverLetter: updatedCoverLetter,
+      });
     }
   };
 
@@ -79,6 +102,35 @@ export const GenerationJobsPanel: React.FC<GenerationJobsPanelProps> = ({
       await loadJobs();
     } catch (err) {
       console.error('Failed to delete job:', err);
+    }
+  };
+
+  const handleRetryJob = async (job: GenerationJob) => {
+    try {
+      // Create a new job with the same details but reset status
+      const newJob = createGenerationJob(
+        job.profile,
+        job.jobDetails,
+        job.config
+      );
+
+      console.log('[GenerationJobsPanel] Creating retry job:', newJob);
+      await storageService.saveGenerationJob(newJob);
+
+      // Delete the old failed job
+      await storageService.deleteGenerationJob(job.id);
+
+      // Send message to background script to start processing
+      const response = await browser.runtime.sendMessage({
+        type: 'START_GENERATION_JOB',
+        payload: { jobId: newJob.id },
+      });
+      console.log('[GenerationJobsPanel] Background response:', response);
+
+      // Reload jobs to show the new one
+      await loadJobs();
+    } catch (err) {
+      console.error('Failed to retry job:', err);
     }
   };
 
@@ -131,6 +183,19 @@ export const GenerationJobsPanel: React.FC<GenerationJobsPanelProps> = ({
     return `${diffDays}d ago`;
   };
 
+  // If viewing a cover letter, show the viewer
+  if (viewingCoverLetter) {
+    return (
+      <CoverLetterViewer
+        coverLetter={viewingCoverLetter.coverLetter}
+        profile={profile}
+        jobDetails={viewingCoverLetter.job.jobDetails}
+        onClose={handleCloseCoverLetter}
+        onUpdate={handleUpdateCoverLetter}
+      />
+    );
+  }
+
   if (loading && jobs.length === 0) {
     return (
       <div className="generation-jobs-panel">
@@ -154,8 +219,8 @@ export const GenerationJobsPanel: React.FC<GenerationJobsPanelProps> = ({
       <div className="generation-jobs-panel">
         <h3>Generation Jobs</h3>
         <div className="empty-state">
-          <p>No generation jobs yet.</p>
-          <p className="hint">Start a new cover letter generation to see it here.</p>
+          <p>📋 No generation jobs yet.</p>
+          <p className="hint">Go to the <strong>Generate</strong> tab and click "Generate Cover Letter" to create your first job. Jobs will appear here and run in the background.</p>
         </div>
       </div>
     );
@@ -211,6 +276,15 @@ export const GenerationJobsPanel: React.FC<GenerationJobsPanelProps> = ({
                   className="action-button view-button"
                 >
                   View Cover Letter
+                </button>
+              )}
+              
+              {job.status === GenerationJobStatus.FAILED && (
+                <button 
+                  onClick={() => handleRetryJob(job)}
+                  className="action-button retry-button"
+                >
+                  Retry
                 </button>
               )}
               

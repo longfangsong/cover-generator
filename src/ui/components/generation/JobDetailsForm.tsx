@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { JobDetails, JobPlatform } from '../../models/JobDetails';
+import { JobDetails, JobPlatform } from '../../../models/JobDetails';
 import './JobDetailsForm.css';
 
 interface JobDetailsFormProps {

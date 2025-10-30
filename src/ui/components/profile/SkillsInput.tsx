@@ -4,7 +4,7 @@
  */
 
 import React, { useState, KeyboardEvent } from 'react';
-import { USER_PROFILE_CONSTRAINTS } from '../../models/UserProfile';
+import { USER_PROFILE_CONSTRAINTS } from '../../../models/UserProfile';
 
 interface SkillsInputProps {
   value: string[];
