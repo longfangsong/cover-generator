@@ -124,7 +124,6 @@ export function Form({ initialProfile, onSave, onCancel }: FormProps) {
     setIsSaving(true);
     try {
       await onSave(profile);
-      toast.success('Profile saved successfully!');
     } catch (error) {
       toast.error('Failed to save profile. Please try again.');
       setErrors({ submit: 'Failed to save profile. Please try again.' });

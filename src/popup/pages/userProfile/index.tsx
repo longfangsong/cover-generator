@@ -30,20 +30,18 @@ export default function UserProfile() {
     }
   };
 
-  const handleProfileExtracted = (extractedProfile: Partial<UserProfileType>) => {
-    // Merge extracted profile with existing profile
+  const handleProfileExtracted = async (extractedProfile: Partial<UserProfileType>) => {
+    let newProfile: UserProfileType;
     if (profile) {
-      setProfile({
+      newProfile = {
         ...profile,
         ...extractedProfile,
-        // Preserve ID and timestamps from existing profile
         id: profile.id,
         createdAt: profile.createdAt,
         updatedAt: new Date(),
-      });
+      };
     } else {
-      // Create new profile with extracted data
-      setProfile({
+      newProfile = {
         id: crypto.randomUUID(),
         name: extractedProfile.name || '',
         email: extractedProfile.email || '',
@@ -57,9 +55,15 @@ export default function UserProfile() {
         skills: extractedProfile.skills || [],
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      };
     }
-    toast.success('Profile extracted successfully!');
+    setProfile(newProfile);
+    try {
+      await storageService.saveProfile(newProfile);
+      toast.success('Profile extracted successfully!');
+    } catch (error) {
+      toast.error('Failed to save extracted profile');
+    }
   };
 
   const handleSave = async (newProfile: UserProfileType) => {

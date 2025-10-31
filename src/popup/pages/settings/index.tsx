@@ -3,7 +3,12 @@ import { LLMSettings } from './llmSettings';
 import { browserStorageService } from '@/infra/storage';
 import { llmRegistry } from '@/infra/llm';
 import { LLMProviderConfig } from '@/models/llmProviderConfig';
-import { Alert } from '@/popup/components/ui/alert';
+
+import { Alert } from '@/popup/components/ui/alert'; // keep for error alert
+import { toast } from 'sonner';
+
+import { Button } from '@/popup/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/popup/components/ui/card';
 
 const storageService = browserStorageService;
 
@@ -11,6 +16,9 @@ export default function Settings() {
   const [config, setConfig] = useState<LLMProviderConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [clearLoading, setClearLoading] = useState(false);
+  const [clearSuccess, setClearSuccess] = useState(false);
 
   // Load config on mount
   useEffect(() => {
@@ -31,6 +39,22 @@ export default function Settings() {
     }
   };
 
+  const handleClearAll = async () => {
+    setClearLoading(true);
+    setClearSuccess(false);
+    setError(null);
+    try {
+      await storageService.clearAllData();
+      setConfig(null);
+      setClearSuccess(true);
+      toast.success('All data cleared successfully.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to clear data');
+    } finally {
+      setClearLoading(false);
+    }
+  };
+
   const handleSave = async (newConfig: LLMProviderConfig) => {
     try {
       await storageService.saveLLMSettings(newConfig);
@@ -44,7 +68,7 @@ export default function Settings() {
     try {
       // Get the provider from registry
       const provider = llmRegistry.get(configToValidate.providerId);
-      
+
       // Build provider config
       const providerConfig = {
         apiKey: configToValidate.apiKey,
@@ -56,7 +80,7 @@ export default function Settings() {
 
       // Validate config
       const result = await provider.validateConfig(providerConfig);
-      
+
       return {
         valid: result.valid,
         error: result.error,
@@ -90,6 +114,22 @@ export default function Settings() {
         onSave={handleSave}
         onValidate={handleValidate}
       />
+
+      <Card className="pt-4 flex justify-end">
+        <CardHeader>
+          <CardTitle>Data & Privacy</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button
+            className="w-full"
+            variant="destructive"
+            onClick={handleClearAll}
+            disabled={clearLoading}
+          >
+            {clearLoading ? 'Clearing...' : 'Clear All Data'}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

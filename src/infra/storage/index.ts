@@ -260,8 +260,8 @@ export class BrowserStorageService {
   }
 
   /**
- * List all cover letters
- */
+  * List all cover letters
+  */
   async listCoverLetters(): Promise<Record<string, CoverLetterContent>> {
     try {
       const result: any = await this.storage.get(STORAGE_KEYS.COVER_LETTERS);
@@ -303,9 +303,19 @@ export class BrowserStorageService {
     }
   }
 
+  public async clearAllData(): Promise<void> {
+    try {
+      await this.storage.clear();
+    }
+    catch (error) {
+      console.error('[BrowserStorage] Failed to clear all data:', error);
+      throw new Error('Failed to clear all data');
+    }
+  }
+
   /**
- * Serialize dates to ISO strings for storage
- */
+  * Serialize dates to ISO strings for storage
+  */
   private serializeDates(obj: any): any {
     if (obj instanceof Date) {
       return obj.toISOString();

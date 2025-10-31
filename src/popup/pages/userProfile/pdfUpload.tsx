@@ -65,7 +65,6 @@ export default function ExtractFromPDF({ onProfileExtracted, onError }: ExtractF
       const extractionResult = await extractProfile(contentToExtract);
 
       // Step 3: Notify parent with extracted profile
-      toast.success('Profile extracted successfully!');
       onProfileExtracted(extractionResult.profile);
 
       // Show warnings if any
@@ -131,6 +130,7 @@ export default function ExtractFromPDF({ onProfileExtracted, onError }: ExtractF
       <div className="text-xs text-muted-foreground space-y-1 text-center">
         <p>Maximum file size: 5MB</p>
         <p>Supported format: PDF only</p>
+        <p>Depending on the length of your CV, it takes about 1min to extract your information.</p>
       </div>
     </Card>
   );
