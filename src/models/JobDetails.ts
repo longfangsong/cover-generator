@@ -9,8 +9,6 @@
  */
 export enum JobPlatform {
   LINKEDIN = 'LinkedIn',
-  INDEED = 'Indeed',
-  GLASSDOOR = 'Glassdoor',
   ARBETSFORMEDLINGEN = 'Arbetsförmedlingen',
   MANUAL = 'Manual', // Manually entered job details
 }
@@ -30,9 +28,6 @@ export interface JobDetails {
 
   /** Full job description (10-10000 chars) */
   description: string;
-
-  /** Extracted skills from job posting (optional) */
-  skills: string[];
 
   /** Source platform */
   platform: JobPlatform;

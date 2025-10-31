@@ -12,8 +12,7 @@ EXTRACTION RULES:
 4. For skills, extract individual skills as separate array items
 5. Keep what the user wrote; do not infer or add information
 6. Preserve all relevant details about roles and achievements
-
-Return ONLY the JSON object, no additional text.
+7. For homepage, github and linkedin, extract the URLs if they exists
 </system>
 
 <user>
@@ -22,23 +21,8 @@ Return ONLY the JSON object, no additional text.
 `;
 
 /**
- * Data structure for resume extraction prompt generation
- */
-export interface ResumeExtractionPromptData {
-  resumeText: string;
-}
-
-/**
- * Fill template with prompt data
- */
-export function fillTemplate(template: string, data: ResumeExtractionPromptData): string {
-  return template.replace(/{resumeText}/g, data.resumeText);
-}
-
-/**
  * Build complete resume extraction prompt
  */
-export function buildResumeExtractionPrompt(resumeText: string): string {
-  const data: ResumeExtractionPromptData = { resumeText };
-  return fillTemplate(RESUME_EXTRACTION_PROMPT, data);
+export function buildPrompt(resumeText: string): string {
+  return RESUME_EXTRACTION_PROMPT.replace(/{resumeText}/g, resumeText);
 }

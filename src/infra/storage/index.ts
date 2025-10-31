@@ -7,11 +7,11 @@
  */
 
 import browser from 'webextension-polyfill';
-import { UserProfile } from '../../models/UserProfile';
-import { CoverLetterContent } from '../../models/CoverLetterContent';
-import { LLMProviderConfig } from '../../models/LLMProviderConfig';
-import { JobDetails } from '../../models/JobDetails';
-import { GenerationJob } from '../../models/GenerationJob';
+import { UserProfile } from '../../models/userProfile';
+import { LLMProviderConfig } from '../../models/llmProviderConfig';
+import { JobDetails } from '../../models/jobDetails';
+import { Task } from '../../models/generationTask';
+import { CoverLetterContent } from '@/models/coverLetterContent';
 
 // Type declaration for chrome global
 declare const chrome: any;
@@ -20,24 +20,13 @@ declare const chrome: any;
  * Get browser storage API with fallback
  */
 function getBrowserStorage() {
-  console.log('[Storage] Checking for browser APIs...', {
-    hasBrowser: typeof browser !== 'undefined',
-    hasBrowserStorage: typeof browser !== 'undefined' && browser?.storage,
-    hasBrowserStorageLocal: typeof browser !== 'undefined' && browser?.storage?.local,
-    hasChrome: typeof chrome !== 'undefined',
-    hasChromeStorage: typeof chrome !== 'undefined' && chrome?.storage,
-    hasChromeStorageLocal: typeof chrome !== 'undefined' && chrome?.storage?.local,
-  });
-
   // Try webextension-polyfill first
   if (browser && browser.storage && browser.storage.local) {
-    console.log('[Storage] Using webextension-polyfill API');
     return browser.storage.local;
   }
-  
+
   // Fallback to chrome API
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-    console.log('[Storage] Using native Chrome API with promise wrapper');
     // Wrap chrome API with promises
     return {
       get: (keys: any) => new Promise((resolve, reject) => {
@@ -78,7 +67,7 @@ function getBrowserStorage() {
       }),
     };
   }
-  
+
   console.error('[Storage] No browser storage API available!');
   throw new Error('Browser storage API not available. Make sure the extension is properly loaded.');
 }
@@ -88,39 +77,16 @@ function getBrowserStorage() {
  */
 const STORAGE_KEYS = {
   USER_PROFILE: 'user_profile',
-  COVER_LETTERS: 'cover_letters',
   PROVIDER_CONFIG: 'provider_config',
-  JOB_CACHE: 'job_cache',
-  GENERATION_JOBS: 'generation_jobs',
+  GENERATION_TASKS: 'generation_tasks',
+  COVER_LETTERS: 'cover_letters',
 } as const;
 
-/**
- * StorageService interface
- * All storage operations for the application
- */
-export interface StorageService {
-  saveProfile(profile: UserProfile): Promise<void>;
-  loadProfile(): Promise<UserProfile | null>;
-  saveCoverLetter(letter: CoverLetterContent): Promise<void>;
-  loadCoverLetter(id: string): Promise<CoverLetterContent | null>;
-  listCoverLetters(profileId: string): Promise<CoverLetterContent[]>;
-  deleteCoverLetter(id: string): Promise<void>;
-  saveProviderConfig(config: LLMProviderConfig): Promise<void>;
-  loadProviderConfig(): Promise<LLMProviderConfig | null>;
-  cacheJobDetails(job: JobDetails): Promise<void>;
-  getCachedJob(url: string): Promise<JobDetails | null>;
-  saveGenerationJob(job: GenerationJob): Promise<void>;
-  loadGenerationJob(id: string): Promise<GenerationJob | null>;
-  listGenerationJobs(profileId?: string): Promise<GenerationJob[]>;
-  deleteGenerationJob(id: string): Promise<void>;
-  clearAll(): Promise<void>;
-  exportData(): Promise<string>;
-}
 
 /**
  * Browser storage implementation using browser.storage.local
  */
-export class BrowserStorageService implements StorageService {
+export class BrowserStorageService {
   private _storage: any = null;
 
   private get storage() {
@@ -130,12 +96,15 @@ export class BrowserStorageService implements StorageService {
     return this._storage;
   }
 
+  public onChange(listener: (changes: any, areaName: string) => void) {
+    this._storage.onChanged.addListener(listener);
+  }
+
   /**
    * Save user profile
    */
   async saveProfile(profile: UserProfile): Promise<void> {
     try {
-      // Convert dates to ISO strings for storage
       const serialized = this.serializeDates(profile);
 
       await this.storage.set({
@@ -159,7 +128,6 @@ export class BrowserStorageService implements StorageService {
         return null;
       }
 
-      // Deserialize dates
       const profile = this.deserializeDates(stored) as UserProfile;
 
       return profile;
@@ -170,103 +138,9 @@ export class BrowserStorageService implements StorageService {
   }
 
   /**
-   * Save generated cover letter (encrypted)
-   */
-  async saveCoverLetter(letter: CoverLetterContent): Promise<void> {
-    try {
-      const result: any = await this.storage.get(STORAGE_KEYS.COVER_LETTERS);
-      const letters: Record<string, any> = result[STORAGE_KEYS.COVER_LETTERS] || {};
-
-      const serialized = this.serializeDates(letter);
-      letters[letter.id] = serialized;
-
-      await this.storage.set({
-        [STORAGE_KEYS.COVER_LETTERS]: letters,
-      });
-    } catch (error) {
-      console.error('[BrowserStorage] Failed to save cover letter:', error);
-      throw new Error('Failed to save cover letter');
-    }
-  }
-
-  /**
-   * Load cover letter by ID (decrypted)
-   */
-  async loadCoverLetter(id: string): Promise<CoverLetterContent | null> {
-    try {
-      const result: any = await this.storage.get(STORAGE_KEYS.COVER_LETTERS);
-      const letters: Record<string, any> = result[STORAGE_KEYS.COVER_LETTERS] || {};
-
-      const stored = letters[id];
-      if (!stored) {
-        return null;
-      }
-
-      return this.deserializeDates(stored) as CoverLetterContent;
-    } catch (error) {
-      console.error('[BrowserStorage] Failed to load cover letter:', error);
-      throw new Error('Failed to load cover letter');
-    }
-  }
-
-  /**
-   * List all cover letters for profile
-   */
-  async listCoverLetters(profileId: string): Promise<CoverLetterContent[]> {
-    try {
-      const result: any = await this.storage.get(STORAGE_KEYS.COVER_LETTERS);
-      const letters: Record<string, any> = result[STORAGE_KEYS.COVER_LETTERS] || {};
-
-      const profileLetters = Object.values(letters)
-        .filter((letter: any) => letter.profileId === profileId)
-        .map((letter: any) => this.deserializeDates(letter) as CoverLetterContent);
-
-      return profileLetters;
-    } catch (error) {
-      console.error('[BrowserStorage] Failed to list cover letters:', error);
-      throw new Error('Failed to list cover letters');
-    }
-  }
-
-  /**
-   * Delete cover letter
-   */
-  async deleteCoverLetter(id: string): Promise<void> {
-    try {
-      const result: any = await this.storage.get(STORAGE_KEYS.COVER_LETTERS);
-      const letters: Record<string, any> = result[STORAGE_KEYS.COVER_LETTERS] || {};
-
-      delete letters[id];
-
-      await this.storage.set({
-        [STORAGE_KEYS.COVER_LETTERS]: letters,
-      });
-    } catch (error) {
-      console.error('[BrowserStorage] Failed to delete cover letter:', error);
-      throw new Error('Failed to delete cover letter');
-    }
-  }
-
-  /**
-   * Save LLM provider config
-   */
-  async saveProviderConfig(config: LLMProviderConfig): Promise<void> {
-    try {
-      const serialized = this.serializeDates(config);
-
-      await this.storage.set({
-        [STORAGE_KEYS.PROVIDER_CONFIG]: serialized,
-      });
-    } catch (error) {
-      console.error('[BrowserStorage] Failed to save provider config:', error);
-      throw new Error('Failed to save provider config');
-    }
-  }
-
-  /**
    * Load provider config
    */
-  async loadProviderConfig(): Promise<LLMProviderConfig | null> {
+  async loadLLMSettings(): Promise<LLMProviderConfig | null> {
     try {
       const result: any = await this.storage.get(STORAGE_KEYS.PROVIDER_CONFIG);
       const stored = result[STORAGE_KEYS.PROVIDER_CONFIG];
@@ -285,178 +159,153 @@ export class BrowserStorageService implements StorageService {
   }
 
   /**
-   * Cache job details (temporary, indexed by URL)
-   */
-  async cacheJobDetails(job: JobDetails): Promise<void> {
+ * Save LLM provider config
+ */
+  async saveLLMSettings(config: LLMProviderConfig): Promise<void> {
     try {
-      const result: any = await this.storage.get(STORAGE_KEYS.JOB_CACHE);
-      const cache: Record<string, any> = result[STORAGE_KEYS.JOB_CACHE] || {};
-
-      cache[job.url] = this.serializeDates(job);
+      const serialized = this.serializeDates(config);
 
       await this.storage.set({
-        [STORAGE_KEYS.JOB_CACHE]: cache,
+        [STORAGE_KEYS.PROVIDER_CONFIG]: serialized,
       });
     } catch (error) {
-      console.error('[BrowserStorage] Failed to cache job details:', error);
-      throw new Error('Failed to cache job details');
+      console.error('[BrowserStorage] Failed to save provider config:', error);
+      throw new Error('Failed to save provider config');
     }
   }
 
   /**
-   * Get cached job details by URL
+   * Save generation task
    */
-  async getCachedJob(url: string): Promise<JobDetails | null> {
+  async saveGenerationTask(task: Task): Promise<void> {
     try {
-      const result: any = await this.storage.get(STORAGE_KEYS.JOB_CACHE);
-      const cache: Record<string, any> = result[STORAGE_KEYS.JOB_CACHE] || {};
+      const result: any = await this.storage.get(STORAGE_KEYS.GENERATION_TASKS);
+      const tasks: Record<string, any> = result[STORAGE_KEYS.GENERATION_TASKS] || {};
 
-      const stored = cache[url];
-      if (!stored) {
-        return null;
-      }
-
-      return this.deserializeDates(stored) as JobDetails;
-    } catch (error) {
-      console.error('[BrowserStorage] Failed to get cached job:', error);
-      throw new Error('Failed to get cached job');
-    }
-  }
-
-  /**
-   * Save generation job
-   */
-  async saveGenerationJob(job: GenerationJob): Promise<void> {
-    try {
-      console.log('[BrowserStorage] Saving generation job:', job.id, job);
-      const result: any = await this.storage.get(STORAGE_KEYS.GENERATION_JOBS);
-      const jobs: Record<string, any> = result[STORAGE_KEYS.GENERATION_JOBS] || {};
-
-      const serialized = this.serializeDates(job);
-      jobs[job.id] = serialized;
+      const serialized = this.serializeDates(task);
+      tasks[task.id] = serialized;
 
       await this.storage.set({
-        [STORAGE_KEYS.GENERATION_JOBS]: jobs,
+        [STORAGE_KEYS.GENERATION_TASKS]: tasks,
       });
-      console.log('[BrowserStorage] Generation job saved successfully');
     } catch (error) {
-      console.error('[BrowserStorage] Failed to save generation job:', error);
       throw new Error('Failed to save generation job');
     }
   }
 
   /**
-   * Load generation job by ID
-   */
-  async loadGenerationJob(id: string): Promise<GenerationJob | null> {
+ * List all generation jobs, optionally filtered by profile
+ */
+  async listGenerationTasks(profileId?: string): Promise<Task[]> {
     try {
-      const result: any = await this.storage.get(STORAGE_KEYS.GENERATION_JOBS);
-      const jobs: Record<string, any> = result[STORAGE_KEYS.GENERATION_JOBS] || {};
+      const result: any = await this.storage.get(STORAGE_KEYS.GENERATION_TASKS);
+      const tasks: Record<string, any> = result[STORAGE_KEYS.GENERATION_TASKS] || {};
 
-      const stored = jobs[id];
-      if (!stored) {
-        return null;
-      }
+      let taskList = Object.values(tasks)
+        .map((task: any) => this.deserializeDates(task) as Task);
 
-      return this.deserializeDates(stored) as GenerationJob;
-    } catch (error) {
-      console.error('[BrowserStorage] Failed to load generation job:', error);
-      throw new Error('Failed to load generation job');
-    }
-  }
-
-  /**
-   * List all generation jobs, optionally filtered by profile
-   */
-  async listGenerationJobs(profileId?: string): Promise<GenerationJob[]> {
-    try {
-      console.log('[BrowserStorage] Listing generation jobs for profile:', profileId);
-      const result: any = await this.storage.get(STORAGE_KEYS.GENERATION_JOBS);
-      const jobs: Record<string, any> = result[STORAGE_KEYS.GENERATION_JOBS] || {};
-
-      console.log('[BrowserStorage] Raw jobs from storage:', jobs);
-
-      let jobList = Object.values(jobs)
-        .map((job: any) => this.deserializeDates(job) as GenerationJob);
-
-      console.log('[BrowserStorage] Deserialized jobs:', jobList);
+      console.log('[BrowserStorage] Deserialized jobs:', taskList);
 
       if (profileId) {
-        jobList = jobList.filter((job: GenerationJob) => job.profileId === profileId);
-        console.log('[BrowserStorage] Filtered jobs for profile:', jobList);
+        taskList = taskList.filter((task: Task) => task.profileId === profileId);
       }
 
       // Sort by creation date descending (newest first)
-      jobList.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      taskList.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-      return jobList;
+      return taskList;
     } catch (error) {
-      console.error('[BrowserStorage] Failed to list generation jobs:', error);
       throw new Error('Failed to list generation jobs');
     }
   }
 
   /**
-   * Delete generation job
+   * Save cover letter
    */
-  async deleteGenerationJob(id: string): Promise<void> {
+  async saveCoverLetter(coverLetter: CoverLetterContent): Promise<void> {
     try {
-      const result: any = await this.storage.get(STORAGE_KEYS.GENERATION_JOBS);
-      const jobs: Record<string, any> = result[STORAGE_KEYS.GENERATION_JOBS] || {};
+      const result: any = await this.storage.get(STORAGE_KEYS.COVER_LETTERS);
+      const letters: Record<string, any> = result[STORAGE_KEYS.COVER_LETTERS] || {};
 
-      delete jobs[id];
+      const serialized = this.serializeDates(coverLetter);
+      letters[coverLetter.id] = serialized;
 
       await this.storage.set({
-        [STORAGE_KEYS.GENERATION_JOBS]: jobs,
+        [STORAGE_KEYS.COVER_LETTERS]: letters,
       });
     } catch (error) {
-      console.error('[BrowserStorage] Failed to delete generation job:', error);
-      throw new Error('Failed to delete generation job');
+      console.error('[BrowserStorage] Failed to save cover letter:', error);
+      throw new Error('Failed to save cover letter');
     }
   }
 
   /**
-   * Clear all user data
+   * Load cover letter by ID
    */
-  async clearAll(): Promise<void> {
+  async loadCoverLetter(letterId: string): Promise<CoverLetterContent | null> {
     try {
-      await this.storage.clear();
-    } catch (error) {
-      console.error('[BrowserStorage] Failed to clear all data:', error);
-      throw new Error('Failed to clear all data');
-    }
-  }
-
-  /**
-   * Export all data as JSON (decrypted)
-   */
-  async exportData(): Promise<string> {
-    try {
-      const profile = await this.loadProfile();
-      const providerConfig = await this.loadProviderConfig();
-
-      let coverLetters: CoverLetterContent[] = [];
-      if (profile) {
-        coverLetters = await this.listCoverLetters(profile.id);
+      const result: any = await this.storage.get(STORAGE_KEYS.COVER_LETTERS);
+      const letters: Record<string, any> = result[STORAGE_KEYS.COVER_LETTERS] || {};
+      console.log(letters);
+      const stored = letters[letterId];
+      if (!stored) {
+        return null;
       }
 
-      const exportData = {
-        profile,
-        coverLetters,
-        providerConfig: providerConfig ? { ...providerConfig, apiKey: '[REDACTED]' } : null,
-        exportedAt: new Date().toISOString(),
-      };
-
-      return JSON.stringify(exportData, null, 2);
+      return this.deserializeDates(stored) as CoverLetterContent;
     } catch (error) {
-      console.error('[BrowserStorage] Failed to export data:', error);
-      throw new Error('Failed to export data');
+      console.error('[BrowserStorage] Failed to load cover letter:', error);
+      throw new Error('Failed to load cover letter');
     }
   }
 
   /**
-   * Serialize dates to ISO strings for storage
-   */
+ * List all cover letters
+ */
+  async listCoverLetters(): Promise<Record<string, CoverLetterContent>> {
+    try {
+      const result: any = await this.storage.get(STORAGE_KEYS.COVER_LETTERS);
+      const letters: Record<string, any> = result[STORAGE_KEYS.COVER_LETTERS] || {};
+
+      // Deserialize dates for each cover letter
+      const deserializedLetters: Record<string, CoverLetterContent> = {};
+      for (const [key, value] of Object.entries(letters)) {
+        deserializedLetters[key] = this.deserializeDates(value) as CoverLetterContent;
+      }
+
+      return deserializedLetters;
+    } catch (error) {
+      console.error('[BrowserStorage] Failed to list cover letters:', error);
+      throw new Error('Failed to list cover letters');
+    }
+  }
+
+  /**
+ * Delete a generation task by ID
+ */
+  async deleteGenerationTask(taskId: string): Promise<void> {
+    try {
+      const result: any = await this.storage.get(STORAGE_KEYS.GENERATION_TASKS);
+      const tasks: Record<string, any> = result[STORAGE_KEYS.GENERATION_TASKS] || {};
+
+      if (tasks[taskId]) {
+        delete tasks[taskId];
+
+        await this.storage.set({
+          [STORAGE_KEYS.GENERATION_TASKS]: tasks,
+        });
+      } else {
+        console.warn(`[BrowserStorage] Task with ID ${taskId} does not exist.`);
+      }
+    } catch (error) {
+      console.error('[BrowserStorage] Failed to delete generation task:', error);
+      throw new Error('Failed to delete generation task');
+    }
+  }
+
+  /**
+ * Serialize dates to ISO strings for storage
+ */
   private serializeDates(obj: any): any {
     if (obj instanceof Date) {
       return obj.toISOString();
@@ -499,3 +348,5 @@ export class BrowserStorageService implements StorageService {
     return obj;
   }
 }
+
+export const browserStorageService = new BrowserStorageService();

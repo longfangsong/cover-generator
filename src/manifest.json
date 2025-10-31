@@ -22,7 +22,7 @@
         "https://www.linkedin.com/jobs/*",
         "https://linkedin.com/jobs/*"
       ],
-      "js": ["src/services/jobExtractor/client.ts"],
+      "js": ["src/content/index.ts"],
       "run_at": "document_idle"
     },
     {
@@ -30,7 +30,7 @@
         "https://arbetsformedlingen.se/platsbanken/annonser/*",
         "https://www.arbetsformedlingen.se/platsbanken/annonser/*"
       ],
-      "js": ["src/services/jobExtractor/client.ts"],
+      "js": ["src/content/index.ts"],
       "run_at": "document_idle"
     }
   ],
@@ -42,13 +42,13 @@
     "128": "icon/128.png"
   },
   "{{chrome}}.action": {
-    "default_popup": "src/popup.html"
+    "default_popup": "src/popup/popup.html"
   },
   "{{firefox}}.browser_action": {
-    "default_popup": "src/popup.html"
+    "default_popup": "src/popup/popup.html"
   },
   "background": {
-    "{{chrome}}.service_worker": "src/background.ts",
-    "{{firefox}}.scripts": ["src/background.ts"]
+    "{{chrome}}.service_worker": "src/background/index.ts",
+    "{{firefox}}.scripts": ["src/background/index.ts"]
   }
 }

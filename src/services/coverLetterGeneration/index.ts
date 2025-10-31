@@ -3,17 +3,17 @@
  * Orchestrates the cover letter generation flow
  */
 
-import { UserProfile } from '../../models/UserProfile';
-import { JobDetails } from '../../models/JobDetails';
-import { CoverLetterContent, CoverLetterState, LLMProviderEnum } from '../../models/CoverLetterContent';
+import { UserProfile } from '../../models/userProfile';
+import { JobDetails } from '../../models/jobDetails';
+import { CoverLetterContent, CoverLetterState, LLMProviderEnum } from '../../models/coverLetterContent';
 import { buildPrompt, SectionInstructions } from './prompt';
-import { BrowserStorageService } from '../../infra/storage';
+import { browserStorageService } from '../../infra/storage';
 import { createLogger } from '../../utils/logger';
 import { validateJobDetails } from '../../models/validation/JobDetailsValidator';
 import { globalRateLimiter } from '../../infra/llm/rateLimiter';
 import { COVER_LETTER_SCHEMA } from '../../infra/llm/schemas';
 import { LLMProvider } from '../../infra/llm';
-import { validateProfile, ValidationError } from '../../models/validation/ProfileValidator';
+import { validate, ValidationError } from '../../models/userProfile/validate';
 
 const logger = createLogger('GenerationService');
 
@@ -25,11 +25,7 @@ export interface GenerationOptions {
   maxTokens?: number;
 }
 
-export interface GenerationResult {
-  success: boolean;
-  content?: CoverLetterContent;
-  error?: string;
-}
+export type GenerationResult = CoverLetterContent | Error;
 
 /**
  * Request format for PDF rendering API
@@ -75,7 +71,7 @@ export async function validateInputs(
   }
 
   // Validate profile completeness
-  const profileValidation = validateProfile(profile);
+  const profileValidation = validate(profile);
   if (!profileValidation.valid) {
     return {
       valid: false,
@@ -179,120 +175,6 @@ function extractSection(text: string, markers: string[]): string {
 }
 
 /**
- * Generate cover letter using LLM provider
- */
-export async function generateCoverLetter(
-  provider: LLMProvider,
-  profile: UserProfile,
-  job: JobDetails,
-  options: GenerationOptions = {}
-): Promise<GenerationResult> {
-  try {
-    // Check rate limit
-    if (!globalRateLimiter.canMakeRequest()) {
-      const waitTime = Math.ceil(globalRateLimiter.getTimeUntilNextRequest() / 1000);
-      const error = `Rate limit exceeded. You can make ${globalRateLimiter.getRemainingRequests()} more requests. Please wait ${waitTime} seconds.`;
-      logger.warn('Rate limit exceeded', { 
-        remaining: globalRateLimiter.getRemainingRequests(),
-        waitTime 
-      });
-      return {
-        success: false,
-        error,
-      };
-    }
-
-    // Record the request
-    globalRateLimiter.recordRequest();
-    
-    logger.info('Starting cover letter generation', {
-      profileId: profile.id,
-      jobId: job.id,
-      company: job.company,
-      position: job.title,
-    });
-
-    // Build prompt
-    const prompt = buildPrompt(profile, job, options.instructions);
-
-    // Call LLM with model from options
-    const response = await provider.generate({
-      prompt,
-      model: options.model || 'gemini-2.5-flash', // Use model from options or default
-      temperature: options.temperature ?? 0.7,
-      maxTokens: options.maxTokens ?? 8192,
-      timeout: 30000,
-      responseSchema: COVER_LETTER_SCHEMA, // Use cover letter schema for structured output
-    });
-
-    // Parse response
-    const sections = parseLLMResponse(response.content);
-    if (!sections) {
-      logger.error('Failed to parse LLM response', undefined, { 
-        responseLength: response.content.length,
-        model: response.model 
-      });
-      return {
-        success: false,
-        error: 'Failed to parse LLM response. The response format was invalid.',
-      };
-    }
-
-    logger.info('Successfully generated cover letter', {
-      profileId: profile.id,
-      jobId: job.id,
-      model: response.model,
-      usage: response.usage,
-    });
-
-    // Create cover letter content
-    const llmProviderEnum = provider.id === 'ollama' ? LLMProviderEnum.OLLAMA : LLMProviderEnum.GEMINI;
-    
-    const coverLetter: CoverLetterContent = {
-      id: crypto.randomUUID(),
-      profileId: profile.id,
-      jobId: job.id,
-      position: job.title,
-      addressee: sections.addressee,
-      opening: sections.opening,
-      aboutMe: sections.aboutMe,
-      whyMe: sections.whyMe,
-      whyCompany: sections.whyCompany,
-      generatedAt: new Date(),
-      llmProvider: llmProviderEnum,
-      llmModel: response.model,
-      state: CoverLetterState.GENERATED,
-    };
-
-    // Save to storage if requested
-    if (options.saveToStorage) {
-      const storage = new BrowserStorageService();
-      await storage.saveCoverLetter(coverLetter);
-    }
-
-    return {
-      success: true,
-      content: coverLetter,
-    };
-  } catch (error) {
-    logger.error('Failed to generate cover letter', error as Error, {
-      profileId: profile.id,
-      jobId: job.id,
-    });
-    
-    let errorMessage = 'An unexpected error occurred during generation.';
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-
-    return {
-      success: false,
-      error: errorMessage,
-    };
-  }
-}
-
-/**
  * Update cover letter content and track editedAt timestamp
  */
 export async function updateCoverLetterSection(
@@ -305,7 +187,7 @@ export async function updateCoverLetterSection(
     return;
   }
 
-  const storage = new BrowserStorageService();
+  const storage = browserStorageService;
   const letter = await storage.loadCoverLetter(letterId);
   
   if (!letter) {

@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { JobDetails, JobPlatform } from '../../../models/JobDetails';
+import { JobDetails, JobPlatform } from '../../../models/jobDetails';
 import { JobExtractor } from '..';
 
 /**
@@ -26,7 +26,6 @@ export class ManualExtractor implements JobExtractor {
       company: '',
       title: '',
       description: '',
-      skills: [],
       platform: JobPlatform.MANUAL,
       extractedAt: new Date(),
       isManual: true,
@@ -56,7 +55,6 @@ export class ManualExtractor implements JobExtractor {
       company: '',
       title: '',
       description: '',
-      skills: [],
       platform: JobPlatform.MANUAL,
       extractedAt: new Date(),
       isManual: true,

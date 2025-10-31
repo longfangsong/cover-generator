@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { JobDetails, JobPlatform } from '../../../models/JobDetails';
+import { JobDetails, JobPlatform } from '../../../models/jobDetails';
 import { JobExtractor, ExtractionError } from '..';
 
 /**
@@ -48,16 +48,12 @@ export class LinkedInExtractor implements JobExtractor {
         throw new ExtractionError('Could not extract job description', this.name, url);
       }
 
-      // Extract skills (optional)
-      const skills = this.extractSkills(document);
-
       const jobDetails: JobDetails = {
         id: uuidv4(),
         url,
         company,
         title,
         description,
-        skills,
         platform: JobPlatform.LINKEDIN,
         extractedAt: new Date(),
         isManual: false,

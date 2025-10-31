@@ -5,6 +5,7 @@
 
 import { GoogleGenAI } from '@google/genai';
 import { LLMProvider, GenerationRequest, GenerationResponse, ProviderConfig, ValidationResult, LLMError } from '.';
+import { browserStorageService } from '../../storage';
 
 export class GeminiProvider implements LLMProvider {
   readonly id = 'gemini';
@@ -13,8 +14,22 @@ export class GeminiProvider implements LLMProvider {
   readonly supportsCustomEndpoint = false;
 
   private apiKey: string | null = null;
+  private apiKeyLoaded = false;
+  private storageService = browserStorageService;
+
+  private async ensureApiKey(): Promise<void> {
+    if (!this.apiKeyLoaded) {
+      const config = await this.storageService.loadLLMSettings();
+      if (config && config.providerId === 'gemini' && config.apiKey) {
+        this.apiKey = config.apiKey;
+      }
+      this.apiKeyLoaded = true;
+    }
+  }
 
   async generate(request: GenerationRequest): Promise<GenerationResponse> {
+    await this.ensureApiKey();
+    
     if (!this.apiKey) {
       throw new LLMError('Gemini API key not configured', 'INVALID_API_KEY', this.id);
     }
@@ -69,7 +84,7 @@ export class GeminiProvider implements LLMProvider {
       const firstCandidate = response.candidates[0];
       if (firstCandidate?.finishReason === 'MAX_TOKENS') {
         throw new LLMError(
-          `Response was truncated due to token limit (${request.maxTokens} tokens). Please increase the Max Tokens setting in Settings tab (recommended: 4096-8192).`,
+          `Response was truncated due to token limit (${request.maxTokens} tokens). Please increase the Max Tokens setting in Settings tab (recommended: 4096-16384).`,
           'INVALID_RESPONSE',
           this.id
         );

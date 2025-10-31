@@ -8,8 +8,8 @@
  * LLM providers supported for generation
  */
 export enum LLMProviderEnum {
-  OLLAMA = 'Ollama',
-  GEMINI = 'Gemini',
+  OLLAMA = 'ollama',
+  GEMINI = 'gemini',
 }
 
 /**

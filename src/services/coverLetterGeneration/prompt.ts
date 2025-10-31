@@ -3,8 +3,8 @@
  * Constructs LLM prompts from user profile and job details
  */
 
-import { UserProfile } from '../../models/UserProfile';
-import { JobDetails } from '../../models/JobDetails';
+import { UserProfile } from '../../models/userProfile';
+import { JobDetails } from '../../models/jobDetails';
 
 export const COVER_LETTER_PROMPT = `<system>
 You are a professional human cover letter writer specialized in tailoring content to specific job roles.
@@ -242,8 +242,7 @@ function formatProjects(profile: UserProfile): string {
       : '';
 
     const orgText = proj.organization ? ` (${proj.organization})` : '';
-    const urlText = proj.url ? `\n  URL: ${proj.url}` : '';
     return `- ${proj.name}${orgText} (${dateRange})
-  ${proj.description}${skillsText}${urlText}`;
+  ${proj.description}${skillsText}$`;
   }).join('\n\n');
 }

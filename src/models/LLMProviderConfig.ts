@@ -4,7 +4,7 @@
  * Storage: Browser local storage (plaintext)
  */
 
-import { LLMProviderEnum } from './CoverLetterContent';
+import { LLMProviderEnum } from './coverLetterContent';
 
 export interface LLMProviderConfig {
   /** Selected provider */
@@ -41,8 +41,8 @@ export const LLM_CONFIG_CONSTRAINTS = {
   TEMPERATURE_MAX: 2.0,
   TEMPERATURE_DEFAULT: 0.7,
   MAX_TOKENS_MIN: 100,
-  MAX_TOKENS_MAX: 8192,
-  MAX_TOKENS_DEFAULT: 2048,
+  MAX_TOKENS_MAX: 16384,
+  MAX_TOKENS_DEFAULT: 8192,
   OLLAMA_DEFAULT_ENDPOINT: 'http://localhost:11434',
 } as const;
 

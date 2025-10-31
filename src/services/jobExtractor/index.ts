@@ -1,4 +1,4 @@
-import { JobDetails } from '../../models/JobDetails';
+import { JobDetails } from '../../models/jobDetails';
 
 /**
  * Interface for job posting extractors

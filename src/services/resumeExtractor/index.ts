@@ -6,17 +6,29 @@
  * into structured UserProfile data.
  */
 
-import { UserProfile } from '../../models/UserProfile';
-import { Experience } from '../../models/Experience';
-import { Education } from '../../models/Education';
-import { Project } from '../../models/Project';
-import { BrowserStorageService } from '../../infra/storage';
-import { buildResumeExtractionPrompt } from './prompt';
+import { UserProfile } from '../../models/userProfile';
+import { Experience } from '../../models/userProfile/experience';
+import { Education } from '../../models/userProfile/education';
+import { Project } from '../../models/userProfile/project';
+import { browserStorageService } from '../../infra/storage';
+import { buildPrompt } from './prompt';
 import { createLogger } from '../../utils/logger';
 import { v4 as uuidv4 } from 'uuid';
 import { llmRegistry } from '../../infra/llm';
 
 const logger = createLogger('ResumeExtractor');
+
+/**
+ * Parse date string safely, returning undefined for invalid dates
+ */
+function parseDate(dateString: string | null | undefined): Date | undefined {
+  if (!dateString || typeof dateString !== 'string' || !dateString.trim()) {
+    return undefined;
+  }
+  
+  const date = new Date(dateString);
+  return date instanceof Date && !isNaN(date.getTime()) ? date : undefined;
+}
 
 export interface ResumeExtractionResult {
   profile: Partial<UserProfile>;
@@ -43,10 +55,10 @@ export async function extractProfile(
     throw new Error('Resume text is too short to extract meaningful information');
   }
 
-  const storageService = new BrowserStorageService();
+  const storageService = browserStorageService;
 
   // Get the configured LLM provider
-  const providerConfig = await storageService.loadProviderConfig();
+  const providerConfig = await storageService.loadLLMSettings();
   if (!providerConfig) {
     throw new Error('No LLM provider configured. Please configure a provider in Settings.');
   }
@@ -65,10 +77,10 @@ export async function extractProfile(
     // All providers support structured output, so we use responseSchema for reliable, 
     // validated JSON responses for the nested resume structure.
     const request = {
-      prompt: buildResumeExtractionPrompt(resumeText),
+      prompt: buildPrompt(resumeText),
       model: providerConfig.model,
       maxTokens: providerConfig.maxTokens,
-      temperature: providerConfig.temperature ?? 0.1, // Low temperature for structured extraction
+      temperature: 0.1, // Low temperature for structured extraction
       responseSchema: {
         type: 'object',
         properties: {
@@ -119,7 +131,6 @@ export async function extractProfile(
                 name: { type: 'string' },
                 description: { type: 'string' },
                 technologies: { type: 'array', items: { type: 'string' } },
-                url: { type: 'string' },
                 startDate: { type: 'string' },
                 endDate: { type: 'string' }
               },
@@ -127,7 +138,7 @@ export async function extractProfile(
             }
           }
         },
-        required: ['name', 'email', 'experience', 'education', 'skills', 'projects']
+        required: ['name', 'email', 'skills']
       }
     };
     const response = await provider.generate(request);
@@ -138,14 +149,7 @@ export async function extractProfile(
     });
 
     // Parse LLM response
-    const result = parseExtractionResponse(response.content);
-
-    // Save to storage if requested
-    if (options.saveToStorage) {
-      // Could optionally save extraction metadata here
-    }
-
-    return result;
+    return parseExtractionResponse(response.content);
   } catch (error: any) {
     logger.error('Failed to extract profile from resume', error as Error, {
       provider: providerId,
@@ -285,23 +289,26 @@ function parseExperience(exp: any, warnings: string[]): Experience | null {
     return null;
   }
 
-  try {
-    console.log('Parsing experience entry:', exp);
-    return {
-      id: uuidv4(),
-      company: String(exp.company).trim().substring(0, 200),
-      role: String(exp.role).trim().substring(0, 200),
-      startDate: new Date(exp.startDate),
-      endDate: exp.endDate && exp.endDate.trim() ? new Date(exp.endDate) : undefined,
-      description: String(exp.description).trim(),
-      skills: Array.isArray(exp.skills) 
-        ? exp.skills.filter((s: any) => typeof s === 'string').slice(0, 20)
-        : []
-    };
-  } catch (error) {
-    warnings.push(`Invalid date format in experience: ${exp.role}`);
+  const startDate = parseDate(exp.startDate);
+  if (!startDate) {
+    warnings.push(`Invalid start date in experience: ${exp.role}`);
     return null;
   }
+
+  const endDate = parseDate(exp.endDate);
+
+  console.log('Parsing experience entry:', exp);
+  return {
+    id: uuidv4(),
+    company: String(exp.company).trim().substring(0, 200),
+    role: String(exp.role).trim().substring(0, 200),
+    startDate,
+    endDate,
+    description: String(exp.description).trim(),
+    skills: Array.isArray(exp.skills) 
+      ? exp.skills.filter((s: any) => typeof s === 'string').slice(0, 20)
+      : []
+  };
 }
 
 /**
@@ -313,19 +320,17 @@ function parseEducation(edu: any, warnings: string[]): Education | null {
     return null;
   }
 
-  try {
-    return {
-      id: uuidv4(),
-      institution: String(edu.institution).trim().substring(0, 200),
-      degree: String(edu.degree).trim().substring(0, 200),
-      field: edu.field ? String(edu.field).trim().substring(0, 200) : undefined,
-      startDate: edu.startDate && edu.startDate.trim() ? new Date(edu.startDate) : undefined,
-      endDate: edu.endDate && edu.endDate.trim() ? new Date(edu.endDate) : undefined
-    };
-  } catch (error) {
-    warnings.push('Invalid date format in education');
-    return null;
-  }
+  const startDate = parseDate(edu.startDate);
+  const endDate = parseDate(edu.endDate);
+
+  return {
+    id: uuidv4(),
+    institution: String(edu.institution).trim().substring(0, 200),
+    degree: String(edu.degree).trim().substring(0, 200),
+    field: edu.field ? String(edu.field).trim().substring(0, 200) : undefined,
+    startDate,
+    endDate
+  };
 }
 
 /**
@@ -337,23 +342,25 @@ function parseProject(proj: any, warnings: string[]): Project | null {
     return null;
   }
 
-  try {
-    return {
-      id: uuidv4(),
-      name: String(proj.name).trim().substring(0, 200),
-      organization: proj.organization ? String(proj.organization).trim().substring(0, 200) : undefined,
-      startDate: new Date(proj.startDate),
-      endDate: proj.endDate && proj.endDate.trim() ? new Date(proj.endDate) : undefined,
-      description: String(proj.description).trim(),
-      url: proj.url ? String(proj.url).trim() : undefined,
-      skills: Array.isArray(proj.technologies) || Array.isArray(proj.skills)
-        ? (proj.technologies || proj.skills).filter((s: any) => typeof s === 'string').slice(0, 20)
-        : []
-    };
-  } catch (error) {
-    warnings.push(`Invalid date format in project: ${proj.name}`);
+  const startDate = parseDate(proj.startDate);
+  if (!startDate) {
+    warnings.push(`Invalid start date in project: ${proj.name}`);
     return null;
   }
+
+  const endDate = parseDate(proj.endDate);
+
+  return {
+    id: uuidv4(),
+    name: String(proj.name).trim().substring(0, 200),
+    organization: proj.organization ? String(proj.organization).trim().substring(0, 200) : undefined,
+    startDate,
+    endDate,
+    description: String(proj.description).trim(),
+    skills: Array.isArray(proj.technologies) || Array.isArray(proj.skills)
+      ? (proj.technologies || proj.skills).filter((s: any) => typeof s === 'string').slice(0, 20)
+      : []
+  };
 }
 
 /**

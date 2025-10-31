@@ -13,9 +13,9 @@ export { GeminiProvider } from './providers/gemini';
 import { llmRegistry } from './registry';
 import { OllamaProvider } from './providers/ollama';
 import { GeminiProvider } from './providers/gemini';
+import { BrowserStorageService } from '../storage';
 
 // Register providers on module load
 llmRegistry.register(new OllamaProvider());
-llmRegistry.register(new GeminiProvider());
-
-console.log('[LLM] Registered providers:', llmRegistry.listIds());
+const geminiProvider = new GeminiProvider();
+llmRegistry.register(geminiProvider);

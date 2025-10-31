@@ -16,6 +16,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 export interface PDFParseResult {
   text: string;
   pageCount: number;
+  links: string[];
   metadata?: {
     title?: string;
     author?: string;
@@ -70,9 +71,13 @@ export class PDFParserService {
       // Extract text from all pages
       const text = await this.extractAllText(pdf);
 
+      // Extract links from all pages
+      const links = await this.extractAllLinks(pdf);
+
       return {
         text,
         pageCount: pdf.numPages,
+        links,
         metadata
       };
     } catch (error: any) {
@@ -169,6 +174,49 @@ export class PDFParserService {
       .filter(text => text.trim().length > 0)
       .join('\n\n')
       .trim();
+  }
+
+  /**
+   * Extract all links from the PDF
+   */
+  private async extractAllLinks(pdf: pdfjsLib.PDFDocumentProxy): Promise<string[]> {
+    const links = new Set<string>();
+
+    // Extract links from each page
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      
+      try {
+        const annotations = await page.getAnnotations();
+        
+        // Process each annotation
+        for (const annotation of annotations) {
+          // Check for link annotations
+          if (annotation.subtype === 'Link') {
+            // URL in annotation
+            if (annotation.url) {
+              links.add(annotation.url);
+            }
+            
+            // Destination URL
+            if (annotation.dest) {
+              // Internal link - skip for now
+              continue;
+            }
+            
+            // Action with URI
+            if (annotation.action?.url) {
+              links.add(annotation.action.url);
+            }
+          }
+        }
+      } catch (error) {
+        // Continue if annotation extraction fails for a page
+        console.warn(`Failed to extract annotations from page ${pageNum}:`, error);
+      }
+    }
+
+    return Array.from(links);
   }
 
   /**

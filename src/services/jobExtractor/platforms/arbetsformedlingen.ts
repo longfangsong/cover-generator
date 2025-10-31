@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { JobDetails, JobPlatform } from '../../../models/JobDetails';
+import { JobDetails, JobPlatform } from '../../../models/jobDetails';
 import { JobExtractor, ExtractionError } from '..';
 
 /**
@@ -40,32 +40,23 @@ export class ArbetsformedlingenExtractor implements JobExtractor {
         );
       }
 
-      console.log('[ArbetsformedlingenExtractor] Starting extraction from:', url);
-
       // Extract company name
       const company = this.extractCompany(document);
       if (!company) {
         throw new ExtractionError('Could not extract company name', this.name, url);
       }
-      console.log('[ArbetsformedlingenExtractor] Extracted company:', company);
 
       // Extract job title
       const title = this.extractTitle(document);
       if (!title) {
         throw new ExtractionError('Could not extract job title', this.name, url);
       }
-      console.log('[ArbetsformedlingenExtractor] Extracted title:', title);
 
       // Extract job description
       const description = this.extractDescription(document);
       if (!description) {
         throw new ExtractionError('Could not extract job description', this.name, url);
       }
-      console.log('[ArbetsformedlingenExtractor] Extracted description length:', description.length);
-
-      // Extract skills (optional)
-      const skills = this.extractSkills(document);
-      console.log('[ArbetsformedlingenExtractor] Extracted skills:', skills.length);
 
       const jobDetails: JobDetails = {
         id: uuidv4(),
@@ -73,7 +64,6 @@ export class ArbetsformedlingenExtractor implements JobExtractor {
         company,
         title,
         description,
-        skills,
         platform: JobPlatform.ARBETSFORMEDLINGEN,
         extractedAt: new Date(),
         isManual: false,
@@ -115,8 +105,7 @@ export class ArbetsformedlingenExtractor implements JobExtractor {
       details.description.length >= 10 &&
       details.description.length <= 10000 &&
       details.url &&
-      details.platform === JobPlatform.ARBETSFORMEDLINGEN &&
-      Array.isArray(details.skills)
+      details.platform === JobPlatform.ARBETSFORMEDLINGEN
     );
   }
 

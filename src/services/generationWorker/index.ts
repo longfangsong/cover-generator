@@ -3,178 +3,235 @@
  * Handles async cover letter generation in the background script
  */
 
-import { GenerationJob, GenerationJobStatus, updateJobStatus } from '../../models/GenerationJob';
-import { UserProfile } from '../../models/UserProfile';
-import { JobDetails } from '../../models/JobDetails';
-import { BrowserStorageService } from '../../infra/storage';
-import { generateCoverLetter } from '../coverLetterGeneration';
-import { llmRegistry } from '../../infra/llm';
-import { LLMProviderEnum } from '../../models/CoverLetterContent';
+import { UserProfile } from '../../models/userProfile';
+import { JobDetails } from '../../models/jobDetails';
+import { Task, Status } from '../../models/generationTask';
+import { BrowserStorageService, browserStorageService } from '../../infra/storage';
+import { LLMProvider, llmRegistry } from '../../infra/llm';
+import { CoverLetterContent, CoverLetterState, LLMProviderEnum } from '../../models/coverLetterContent';
 import { createLogger } from '../../utils/logger';
+import { COVER_LETTER_SCHEMA } from '@/infra/llm/schemas';
+import { buildPrompt } from '../coverLetterGeneration/prompt';
+import { GenerationOptions, GenerationResult, parseLLMResponse } from '../coverLetterGeneration';
+import { wakeupPDFService } from '../pdfExporter';
 
 const logger = createLogger('GenerationWorker');
-const storageService = new BrowserStorageService();
+const storageService = browserStorageService;
 
 /**
- * Start processing a generation job in the background
+ * Generate cover letter using LLM provider
  */
-export async function processGenerationJob(jobId: string): Promise<void> {
-  console.log('[GenerationWorker] Starting generation job:', jobId);
-  logger.info('Starting generation job', { jobId });
-  
+export async function generateCoverLetter(
+  provider: LLMProvider,
+  profile: UserProfile,
+  job: JobDetails,
+  options: GenerationOptions = {}
+): Promise<GenerationResult> {
   try {
-    // Load the job
-    console.log('[GenerationWorker] Loading job from storage...');
-    let job = await storageService.loadGenerationJob(jobId);
-    if (!job) {
-      console.error('[GenerationWorker] Job not found:', jobId);
-      logger.error('Job not found', undefined, { jobId });
-      return;
-    }
-    console.log('[GenerationWorker] Job loaded:', job);
-
-    // Update status to in progress
-    console.log('[GenerationWorker] Updating job status to IN_PROGRESS');
-    job = updateJobStatus(job, GenerationJobStatus.IN_PROGRESS, {
-      progress: 10,
-      currentStep: 'Loading configuration...',
+    logger.info('Starting cover letter generation', {
+      profileId: profile.id,
+      jobId: job.id,
+      company: job.company,
+      position: job.title,
     });
-    await storageService.saveGenerationJob(job);
-    console.log('[GenerationWorker] Job status updated');
 
-    // Load provider config
-    console.log('[GenerationWorker] Loading provider config...');
-    const providerConfig = await storageService.loadProviderConfig();
-    if (!providerConfig) {
-      console.error('[GenerationWorker] Provider config not found');
-      job = updateJobStatus(job, GenerationJobStatus.FAILED, {
-        error: 'LLM provider not configured',
+    // Build prompt
+    const prompt = buildPrompt(profile, job, options.instructions);
+
+    // Call LLM with model from options
+    const response = await provider.generate({
+      prompt,
+      model: options.model || 'gemini-2.5-flash', // Use model from options or default
+      temperature: options.temperature ?? 0.7,
+      maxTokens: options.maxTokens ?? 8192,
+      timeout: 30000,
+      responseSchema: COVER_LETTER_SCHEMA, // Use cover letter schema for structured output
+    });
+
+    // Parse response
+    const sections = parseLLMResponse(response.content);
+    if (!sections) {
+      logger.error('Failed to parse LLM response', undefined, {
+        responseLength: response.content.length,
+        model: response.model
       });
-      await storageService.saveGenerationJob(job);
-      return;
-    }
-    console.log('[GenerationWorker] Provider config loaded:', providerConfig);
-
-    job = updateJobStatus(job, GenerationJobStatus.IN_PROGRESS, {
-      progress: 30,
-      currentStep: 'Preparing generation request...',
-    });
-    await storageService.saveGenerationJob(job);
-
-    // Get LLM provider
-    const providerId = providerConfig.providerId === LLMProviderEnum.OLLAMA ? 'ollama' : 'gemini';
-    const provider = llmRegistry.get(providerId);
-    console.log('[GenerationWorker] Using provider:', providerId);
-
-    // Configure the provider with the API key/endpoint from config
-    console.log('[GenerationWorker] Configuring provider...');
-    if (providerId === 'gemini') {
-      const geminiProvider = provider as any; // Cast to access setApiKey
-      if (geminiProvider.setApiKey && providerConfig.apiKey) {
-        geminiProvider.setApiKey(providerConfig.apiKey);
-        console.log('[GenerationWorker] Gemini API key configured');
-      } else {
-        console.error('[GenerationWorker] No API key in provider config!');
-        job = updateJobStatus(job, GenerationJobStatus.FAILED, {
-          error: 'Gemini API key not found in configuration',
-        });
-        await storageService.saveGenerationJob(job);
-        return;
-      }
-    } else if (providerId === 'ollama') {
-      const ollamaProvider = provider as any;
-      if (ollamaProvider.setEndpoint && providerConfig.endpoint) {
-        ollamaProvider.setEndpoint(providerConfig.endpoint);
-        console.log('[GenerationWorker] Ollama endpoint configured:', providerConfig.endpoint);
-      }
+      return new Error('Failed to parse cover letter sections from LLM response');
     }
 
-    job = updateJobStatus(job, GenerationJobStatus.IN_PROGRESS, {
-      progress: 50,
-      currentStep: 'Generating cover letter...',
+    logger.info('Successfully generated cover letter', {
+      profileId: profile.id,
+      jobId: job.id,
+      model: response.model,
+      usage: response.usage,
     });
-    await storageService.saveGenerationJob(job);
 
-    // Generate cover letter
-    console.log('[GenerationWorker] Starting cover letter generation...');
-    const result = await generateCoverLetter(
-      provider,
-      job.profile,
-      job.jobDetails,
-      {
-        instructions: job.config.instructions,
-        saveToStorage: true,
-        model: job.config.model || providerConfig.model,
-        temperature: job.config.temperature ?? providerConfig.temperature,
-        maxTokens: job.config.maxTokens ?? providerConfig.maxTokens,
-      }
-    );
+    // Create cover letter content
+    const llmProviderEnum = provider.id === 'ollama' ? LLMProviderEnum.OLLAMA : LLMProviderEnum.GEMINI;
 
-    if (!result.success) {
-      console.error('[GenerationWorker] Generation failed:', result.error);
-      job = updateJobStatus(job, GenerationJobStatus.FAILED, {
-        error: result.error || 'Generation failed',
-      });
-      await storageService.saveGenerationJob(job);
-      return;
-    }
+    const coverLetter: CoverLetterContent = {
+      id: crypto.randomUUID(),
+      profileId: profile.id,
+      jobId: job.id,
+      position: job.title,
+      addressee: sections.addressee,
+      opening: sections.opening,
+      aboutMe: sections.aboutMe,
+      whyMe: sections.whyMe,
+      whyCompany: sections.whyCompany,
+      generatedAt: new Date(),
+      llmProvider: llmProviderEnum,
+      llmModel: response.model,
+      state: CoverLetterState.GENERATED,
+    };
 
-    // Update job with success
-    console.log('[GenerationWorker] Generation successful, updating job...');
-    job = updateJobStatus(job, GenerationJobStatus.COMPLETED, {
-      progress: 100,
-      coverLetterId: result.content!.id,
-      currentStep: 'Completed',
-    });
-    await storageService.saveGenerationJob(job);
+    const storage = new BrowserStorageService();
+    await storage.saveCoverLetter(coverLetter);
 
-    console.log('[GenerationWorker] Job completed successfully:', jobId, result.content!.id);
-    logger.info('Generation job completed successfully', { jobId, coverLetterId: result.content!.id });
-    
+    return coverLetter;
   } catch (error) {
-    console.error('[GenerationWorker] Error processing job:', error);
-    logger.error('Failed to process generation job', error as Error, { jobId });
-    
-    const job = await storageService.loadGenerationJob(jobId);
-    if (job) {
-      const updatedJob = updateJobStatus(job, GenerationJobStatus.FAILED, {
-        error: error instanceof Error ? error.message : 'Unknown error',
+    logger.error('Failed to generate cover letter', error as Error, {
+      profileId: profile.id,
+      jobId: job.id,
+    });
+
+    let errorMessage = 'An unexpected error occurred during generation.';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
+    return new Error(errorMessage);
+  }
+}
+
+/**
+ * CoverLetterGenerationService
+ * Processes generation tasks on-demand when they arrive
+ */
+export class CoverLetterGenerationService {
+  private isProcessing = false;
+  private taskQueue: Task[] = [];
+
+  /**
+   * Notify the service that a new task has arrived
+   * This will start processing if not already processing
+   */
+  async addToQueue(task: Task): Promise<void> {
+    await wakeupPDFService();
+    logger.info('New task arrived', {
+      taskId: task.id,
+      company: task.company,
+      position: task.position,
+    });
+
+    this.taskQueue.push(task);
+    this.processQueue();
+  }
+
+  /**
+   * Process all tasks in the queue
+   */
+  async processQueue(): Promise<void> {
+    if (this.isProcessing || this.taskQueue.length === 0) {
+      return;
+    }
+
+    this.isProcessing = true;
+
+    try {
+      while (this.taskQueue.length > 0) {
+        const task = this.taskQueue.shift();
+        if (task) {
+          await this.processTask(task);
+        }
+      }
+    } catch (error) {
+      logger.error('Error processing task queue', error as Error);
+    } finally {
+      this.isProcessing = false;
+    }
+  }
+
+  /**
+   * Process a single generation task
+   */
+  private async processTask(task: Task): Promise<void> {
+    try {
+      // Mark task as in progress
+      const updatedTask: Task = {
+        ...task,
+        status: Status.IN_PROGRESS,
+        startedAt: new Date(),
+      };
+
+      await storageService.saveGenerationTask(updatedTask);
+
+      // Get LLM provider
+      const providerConfig = await storageService.loadLLMSettings();
+      if (!providerConfig) {
+        throw new Error('No LLM provider configured');
+      }
+
+      const provider = llmRegistry.get(providerConfig.providerId);
+      if (!provider) {
+        throw new Error(`LLM provider '${providerConfig.providerId}' not found`);
+      }
+
+      logger.info('Starting cover letter generation', {
+        taskId: task.id,
+        provider: providerConfig.providerId,
+        model: providerConfig.model,
       });
-      await storageService.saveGenerationJob(updatedJob);
+
+      // Generate cover letter
+      const result = await generateCoverLetter(
+        provider,
+        task.profile,
+        task.jobDetails,
+        {
+          model: task.config.model || providerConfig.model,
+          temperature: task.config.temperature,
+          maxTokens: task.config.maxTokens,
+          instructions: task.config.instructions,
+          saveToStorage: true,
+        }
+      );
+
+      if (result instanceof Error) {
+        throw result;
+      }
+
+      // Mark task as completed
+      const completedTask: Task = {
+        ...updatedTask,
+        status: Status.COMPLETED,
+        completedAt: new Date(),
+        coverLetterId: result.id,
+      };
+
+      await storageService.saveGenerationTask(completedTask);
+
+      logger.info('Task completed successfully', {
+        taskId: task.id,
+        coverLetterId: result.id,
+      });
+    } catch (error) {
+      logger.error('Task processing failed', error as Error, { taskId: task.id });
+
+      // Mark task as failed
+      const failedTask: Task = {
+        ...task,
+        status: Status.FAILED,
+        completedAt: new Date(),
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+
+      await storageService.saveGenerationTask(failedTask);
     }
   }
 }
 
 /**
- * Queue a new generation job
+ * Singleton instance of the generation service
  */
-export async function queueGenerationJob(job: GenerationJob): Promise<void> {
-  logger.info('Queueing generation job', { jobId: job.id, company: job.company, position: job.position });
-  
-  // Save the job
-  await storageService.saveGenerationJob(job);
-  
-  // Trigger background processing
-  // This will be called from the background script
-}
-
-/**
- * Cancel a generation job
- */
-export async function cancelGenerationJob(jobId: string): Promise<void> {
-  logger.info('Cancelling generation job', { jobId });
-  
-  const job = await storageService.loadGenerationJob(jobId);
-  if (!job) {
-    logger.warn('Job not found for cancellation', { jobId });
-    return;
-  }
-
-  if (job.status === GenerationJobStatus.COMPLETED || job.status === GenerationJobStatus.FAILED) {
-    logger.warn('Cannot cancel completed or failed job', { jobId, status: job.status });
-    return;
-  }
-
-  const updatedJob = updateJobStatus(job, GenerationJobStatus.CANCELLED);
-  await storageService.saveGenerationJob(updatedJob);
-}
+export const coverLetterGenerationService = new CoverLetterGenerationService();
+coverLetterGenerationService.processQueue();
