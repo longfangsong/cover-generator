@@ -40,7 +40,6 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, coverLetter, onCoverLet
             why_company: coverLetter.whyCompany || '',
         });
         if (response instanceof Error) {
-            alert(response.message);
             return;
         }
         let filename = response.suggestedFilename;
