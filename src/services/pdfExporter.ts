@@ -41,6 +41,22 @@ export async function wakeupPDFService(): Promise<void> {
  * Background scripts have broader permissions than popup/content scripts
  */
 export async function exportPDF(request: PDFExportRequest): Promise<PDFExportResponse | Error> {
+  // Helper to deeply escape # to \\# in all string fields
+  function escapeHashDeep(obj: any): any {
+    if (typeof obj === 'string') {
+      return obj.replace(/#/g, '\\#');
+    } else if (Array.isArray(obj)) {
+      return obj.map(escapeHashDeep);
+    } else if (obj && typeof obj === 'object') {
+      const result: any = {};
+      for (const key in obj) {
+        result[key] = escapeHashDeep(obj[key]);
+      }
+      return result;
+    }
+    return obj;
+  }
+
   let lastError: Error | null = null;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
@@ -49,18 +65,19 @@ export async function exportPDF(request: PDFExportRequest): Promise<PDFExportRes
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
+      const escapedRequest = escapeHashDeep({
+        ...request,
+        homepage: '',
+        github: '',
+        linkedin: '',
+      });
+
       const response = await fetch(`${API_ENDPOINT}render`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...request,
-          // TODO: use real user data
-          homepage: '',
-          github: '',
-          linkedin: '',
-        }),
+        body: JSON.stringify(escapedRequest),
         signal: controller.signal,
       });
 
