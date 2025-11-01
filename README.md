@@ -6,6 +6,12 @@ Create stunning, personalized cover letters in seconds with this powerful browse
 
 ## 🎯 Quick Start
 
+
+
+https://github.com/user-attachments/assets/c0c6b10f-3087-47d4-aecd-0d637c04374e
+
+
+
 ### 1. Configure Your AI Provider
 
 Get started by selecting your preferred AI provider in the **Settings** tab:
