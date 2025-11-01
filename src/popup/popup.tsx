@@ -11,6 +11,7 @@ import Tasks from "./pages/tasks";
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { browserStorageService } from '@/infra/storage';
+import { wakeupPDFService } from "@/services/pdfExporter";
 
 function NavBar() {
     return <NavigationMenu>
@@ -67,6 +68,10 @@ function RedirectLogic() {
 
 
 export default function Popup() {
+    useEffect(() => {
+        wakeupPDFService();
+    }, []);
+
     return (
         <BrowserRouter>
             <NavBar />

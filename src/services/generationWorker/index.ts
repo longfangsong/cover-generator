@@ -13,7 +13,6 @@ import { createLogger } from '../../utils/logger';
 import { COVER_LETTER_SCHEMA } from '@/infra/llm/schemas';
 import { buildPrompt } from '../coverLetterGeneration/prompt';
 import { GenerationOptions, GenerationResult, parseLLMResponse } from '../coverLetterGeneration';
-import { wakeupPDFService } from '../pdfExporter';
 
 const logger = createLogger('GenerationWorker');
 const storageService = browserStorageService;
@@ -116,7 +115,6 @@ export class CoverLetterGenerationService {
    * This will start processing if not already processing
    */
   async addToQueue(task: Task): Promise<void> {
-    await wakeupPDFService();
     logger.info('New task arrived', {
       taskId: task.id,
       company: task.company,
