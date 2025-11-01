@@ -17,7 +17,7 @@ Get started by selecting your preferred AI provider in the **Settings** tab:
    - **Provider**: Gemini
    - **API Key**: Paste your key
 
-![Use Gemini Provider](./docs/readme/gemini.png)
+<img src="./docs/readme/gemini.png" width="300px" alt="Use Gemini Provider" />
 
 #### Option B: Ollama (Local, Free)
 
@@ -29,7 +29,7 @@ In the extension:
 - **Endpoint**: `http://localhost:11434` (or your custom Ollama endpoint)
 - **Model**: Your preferred model
 
-![Use Ollama Provider](./docs/readme/ollama.png)
+<img src="./docs/readme/ollama.png" width="300px" alt="Use Ollama Provider" />
 
 ### 2. Build Your Profile
 
@@ -51,22 +51,26 @@ Head to the **Profile** tab and choose your preferred method:
 3. Job details are auto-extracted for you—edit as needed!
 4. If extraction doesn’t happen automatically, refresh the LinkedIn page and click **Extract from Current Page**.
 
-![Jobs page](./docs/readme/job_page.png)
+<img src="./docs/readme/job_page.png" width="300px" alt="Jobs page" />
 
 ### 4. Generate Your Cover Letter
 
 1. Cover letters are crafted in four sections: opening, about you, why you’re a great fit, and why you want the company. You can add your own instructions for each section, emphasize your strengths or include extra details not in your resume!
-   ![Instruction](./docs/readme/instructions.png)
+   
+   <img src="./docs/readme/instructions.png" width="300px" alt="Instruction" />
+
 2. Click **Start Cover Letter Generation**. The process runs in the background, so you can keep browsing jobs or start more generation tasks.
 
 ### 5. Edit & Export Your Cover Letter
 
 1. Visit the **Tasks** page to see all your generated cover letters.
-   ![Tasks page](./docs/readme/tasks.png)
+   
+   <img src="./docs/readme/tasks.png" width="300px" alt="Tasks page" />
+
 2. Once a task is marked **completed**, you can view, edit, and export your letter. Choose your export method:
    - **Copy to Clipboard**: Instantly copy your formatted letter.
    - **Export to PDF**: Download a polished, professional PDF.
    Both options automatically include a friendly greeting and closing for you.
-   ![Edit page](./docs/readme/edit.png)
-   ![Export page](./docs/readme/export.png)
-   ![Generated pdf](./docs/readme/pdf.png)
+   <img src="./docs/readme/edit.png" width="250px" alt="Edit page" />
+   <img src="./docs/readme/export.png" width="250px" alt="Export page" />
+   <img src="./docs/readme/pdf.png" width="250px" alt="Generated pdf" />
